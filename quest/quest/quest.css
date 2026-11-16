@@ -1,0 +1,346 @@
+/* === НАСТРОЙКИ РАЗМЕРОВ ИКОНОК (МЕНЯТЬ ТУТ) === */
+:root {
+  --q-item-size-pc: 64px;       /* Размер ключа и записки на ПК */
+  --q-lock-size-pc: 84px;       /* Размер замка на ПК (крупнее, чтобы перекрыть стрелку) */
+  
+  --q-item-size-mob: 50px;      /* Размер ключа и записки на телефоне */
+  --q-lock-size-mob: 68px;      /* Размер замка на телефоне */
+}
+
+/* === ИГРОВОЙ ИНТЕРФЕЙС (HUD) === */
+#quest-inventory {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(18, 20, 26, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
+  z-index: 1000;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.quest-slot {
+  width: 56px;
+  height: 56px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #fff;
+  font-family: sans-serif;
+  font-size: 10px;
+  user-select: none;
+  padding: 4px;
+  box-sizing: border-box;
+}
+
+.quest-slot:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.quest-slot.selected {
+  border-color: #ffb703;
+  background: rgba(255, 183, 3, 0.2);
+  box-shadow: 0 0 15px rgba(255, 183, 3, 0.4);
+}
+
+.quest-slot-img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  margin-bottom: 2px;
+  pointer-events: none;
+}
+
+.quest-slot-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* === ПРОЗРАЧНЫЕ КОНТЕЙНЕРЫ ХОТСПОТОВ С PNG === */
+.quest-hotspot {
+  width: var(--q-item-size-pc);
+  height: var(--q-item-size-pc);
+  margin-left: calc(var(--q-item-size-pc) / -2);
+  margin-top: calc(var(--q-item-size-pc) / -2);
+  background: transparent; /* Прозрачный фон, но сам блок ловит все клики! */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 50;
+  user-select: none;
+}
+
+.quest-hotspot.quest-lock {
+  width: var(--q-lock-size-pc);
+  height: var(--q-lock-size-pc);
+  margin-left: calc(var(--q-lock-size-pc) / -2);
+  margin-top: calc(var(--q-lock-size-pc) / -2);
+  z-index: 55;
+}
+
+/* Адаптация размеров для мобильных экранов */
+@media (max-width: 768px) {
+  .quest-hotspot {
+    width: var(--q-item-size-mob);
+    height: var(--q-item-size-mob);
+    margin-left: calc(var(--q-item-size-mob) / -2);
+    margin-top: calc(var(--q-item-size-mob) / -2);
+  }
+  .quest-hotspot.quest-lock {
+    width: var(--q-lock-size-mob);
+    height: var(--q-lock-size-mob);
+    margin-left: calc(var(--q-lock-size-mob) / -2);
+    margin-top: calc(var(--q-lock-size-mob) / -2);
+  }
+}
+
+.quest-hotspot-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none; /* Клик всегда ловит родительский контейнер */
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6));
+  transition: filter 0.2s ease;
+}
+
+.quest-hotspot:hover .quest-hotspot-img {
+  filter: drop-shadow(0 0 14px rgba(255, 210, 60, 0.95));
+}
+
+.quest-hotspot-label {
+  position: absolute;
+  top: -30px;
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-family: sans-serif;
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.quest-hotspot:hover .quest-hotspot-label {
+  opacity: 1;
+}
+
+/* Анимация растворения замка */
+.quest-hotspot.dissolving {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.7s ease;
+}
+
+/* Всплывающее уведомление */
+#quest-toast {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: rgba(18, 20, 26, 0.95);
+  color: #fff;
+  border: 1px solid #ffb703;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-family: sans-serif;
+  font-size: 15px;
+  z-index: 1005;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.25s ease;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+}
+
+#quest-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* === ПАНЕЛЬ РЕДАКТОРА КВЕСТА === */
+#q-editor-toggle {
+  position: fixed;
+  top: 75px;
+  left: 20px;
+  padding: 9px 15px;
+  background: rgba(18, 20, 26, 0.9);
+  color: #ffb703;
+  border: 1px solid #ffb703;
+  border-radius: 8px;
+  font-family: sans-serif;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 1010;
+}
+
+#q-editor-panel {
+  position: fixed;
+  top: 120px;
+  left: 20px;
+  width: 310px;
+  max-height: calc(100vh - 150px);
+  overflow-y: auto;
+  background: rgba(18, 20, 26, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 15px;
+  color: #fff;
+  font-family: sans-serif;
+  font-size: 13px;
+  z-index: 1010;
+  display: none;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+
+#q-editor-panel.open {
+  display: block;
+}
+
+.q-ed-row {
+  margin-bottom: 10px;
+}
+
+.q-ed-row label {
+  display: block;
+  color: #aaa;
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+
+.q-ed-input, .q-ed-select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 9px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 13px;
+}
+
+.q-ed-select option {
+  background: #1a1d24;
+  color: #fff;
+}
+
+.q-ed-btn {
+  width: 100%;
+  padding: 9px;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.q-ed-btn-pick {
+  background: #2b303b;
+  color: #fff;
+  border: 1px dashed #ffb703;
+}
+
+.q-ed-btn-pick.picking {
+  background: #198754;
+  border-style: solid;
+}
+
+.q-ed-btn-save {
+  background: #ffb703;
+  color: #000;
+}
+
+.q-ed-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 6px 8px;
+  border-radius: 6px;
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.q-ed-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.q-ed-move {
+  background: #0d6efd;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 3px 7px;
+  cursor: pointer;
+}
+
+.q-ed-move.active {
+  background: #198754;
+  box-shadow: 0 0 8px #4ade80;
+}
+
+.q-ed-del {
+  background: #dc3545;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 3px 7px;
+  cursor: pointer;
+}
+
+body.q-picking-mode .hotspot,
+body.q-picking-mode .quest-hotspot {
+  pointer-events: none !important;
+  opacity: 0.4;
+}
+
+.q-temp-pin {
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  margin-top: -7px;
+  background: #ff2a5f;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Кнопки подтверждения и отмены при редактировании объекта */
+.q-ed-edit-controls {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.q-ed-btn-confirm {
+  background: #198754;
+  color: #fff;
+  flex: 2;
+}
+
+.q-ed-btn-cancel {
+  background: #495057;
+  color: #fff;
+  flex: 1;
+}
+
+.q-ed-list-item.editing-active {
+  border: 1px solid #ffb703;
+  background: rgba(255, 183, 3, 0.15);
+}
