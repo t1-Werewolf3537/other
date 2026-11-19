@@ -15,6 +15,7 @@
   var START_WITH_REPAIR = false;    // true = старт с ремонтом (_REPAIR), false = без ремонта
   var START_SCENE_INDEX = 3;        // Индекс стартовой сцены (нумерация с 0)
   var APARTMENT_TITLE = "Тип-10Л | 2-ЕВРО 47м²";
+  var TILES_URL = "https://storage.yandexcloud.net/tours.wolf-studio.ru/other/wolftour/tiles";          // Путь к тайлам: "tiles" или ссылка на Яндекс Облако (без слеша на конце)
   // =========================================================================
 
   var isWhiteStyle = ENABLE_REPAIR_SWITCH ? START_WITH_REPAIR : false;
@@ -65,7 +66,7 @@
 
   // Создание сцен
   var scenes = data.scenes.map(function(sceneData) {
-    var urlPrefix = "tiles";
+    var urlPrefix = TILES_URL.replace(/\/+$/, '');
     var ext = (data.settings && data.settings.tileFormat) ? data.settings.tileFormat : "jpg";
     var source = WolfTour.ImageUrlSource.fromString(
       urlPrefix + "/" + sceneData.id + "/{z}/{f}/{y}/{x}." + ext,
