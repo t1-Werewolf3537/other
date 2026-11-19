@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, minimal-ui">
+  
+  <title>Finder: Animals — Игра поиск фрагментов | Wolf Studio</title>  
+  <meta name="description" content="Finder: Animals — интерактивная 3D-игра по поиску пазлов на панораме 360° от Wolf Studio.">
+
+  <link rel="stylesheet" href="vendor/reset.min.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/png" href="../favicon.png">
+</head>
+
+<body class="multiple-scenes">
+
+  <!-- Контейнер панорамы -->
+  <div id="pano"></div>
+
+  <!-- Выезжающее меню выбора уровней -->
+  <div id="sceneList">
+    <ul class="scenes" id="sceneListUl"></ul>
+  </div>
+
+  <!-- Верхняя плашка с названием и счетчиком -->
+  <div id="titleBar">
+    <h1 class="sceneName">Finder: Animals</h1>
+    <span id="puzzle-counter" class="puzzle-counter-badge">0 / 0</span>
+  </div>
+
+  <!-- Кнопка открытия меню -->
+  <a href="javascript:void(0)" id="sceneListToggle" aria-label="Меню выбора уровней">
+    <img class="icon off" src="img/expand.png" alt="Открыть меню">
+    <img class="icon on" src="img/collapse.png" alt="Закрыть меню">
+  </a>
+
+  <!-- Водяной знак Wolf Studio (в правом верхнем углу) -->
+  <a href="https://wolf-studio.ru" target="_blank" rel="noopener noreferrer" class="custom-wolf-watermark-top" aria-label="Wolf Studio">
+    <img src="img/circle.png" class="wolf-watermark-bg" alt="">
+    <img src="img/site.png" class="wolf-watermark-icon" alt="Wolf Studio">
+  </a>
+
+  <!-- Увеличенное превью выбранного пазла (правый верхний угол под водяным знаком) -->
+  <div id="puzzle-preview-box" class="hidden">
+    <button id="puzzle-preview-close" title="Снять выбор">&times;</button>
+    <div class="puzzle-preview-media">
+      <img id="puzzle-preview-img" src="" alt="Выбранный фрагмент">
+      <div id="puzzle-success-overlay">
+        <div class="success-checkmark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <div id="puzzle-fireworks"></div>
+      </div>
+    </div>
+    <div class="puzzle-preview-hint">Найди это место и кликни</div>
+  </div>
+
+  <!-- Инвентарь пазлов внизу экрана -->
+  <div id="puzzle-inventory-wrapper">
+    <div id="puzzle-inventory"></div>
+  </div>
+
+  <!-- Окно победы -->
+  <div id="win-modal" class="hidden">
+    <div class="win-modal-card">
+      <h2>Уровень пройден!</h2>
+      <p>Все фрагменты панорамы найдены и собраны.</p>
+      <button id="win-restart-btn">Сыграть ещё раз</button>
+    </div>
+  </div>
+
+  <!-- Скрипты -->
+  <script src="vendor/wolftour.js"></script>
+  <script src="data.js"></script>
+  <script src="index.js"></script>
+
+</body>
+</html>
