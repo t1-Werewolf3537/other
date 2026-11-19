@@ -113,6 +113,14 @@ const server = http.createServer((req, res) => {
 
 
 
+  // Короткий удобный адрес для запуска редактора: http://localhost:3000/editor
+  if (parsedUrl.pathname === '/editor' || parsedUrl.pathname === '/editor/') {
+    const editorPath = path.join(__dirname, 'quest_editor.html');
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(fs.readFileSync(editorPath));
+    return;
+  }
+
   // Раздача статических файлов из корня проекта
   const reqPath = parsedUrl.pathname === '/' ? '/index.html' : parsedUrl.pathname;
   const filePath = path.join(ROOT_DIR, decodeURIComponent(reqPath));
@@ -128,6 +136,7 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`\n🎮 Сервер квеста запущен: http://localhost:${PORT}`);
+  console.log(`\n🎮 Игра запущена:      http://localhost:${PORT}`);
+  console.log(`🛠 Редактор запущен:  http://localhost:${PORT}/editor`);
   console.log(`📁 База сохраняется в: ${QUEST_DATA_PATH}\n`);
 });

@@ -1,4 +1,5 @@
 import os
+import io
 import json
 import math
 import re
@@ -8,6 +9,12 @@ INPUT_DIR = "images"
 OUTPUT_DIR = "tiles"
 DATA_JS_PATH = "data.js"
 TILE_SIZE = 512
+
+QUALITY_PRESETS = {
+    "1": {"name": "Эконом (высокое сжатие для медленного интернета)", "quality": 65},
+    "2": {"name": "Оптимальный (баланс качества и веса для веба)",     "quality": 75},
+    "3": {"name": "Высокий (максимальная детализация, стандарт)",    "quality": 85},
+}
 
 def equirect_to_cube_face(img, face, face_size):
     cube_img = Image.new("RGB", (face_size, face_size))
@@ -42,6 +49,66 @@ def equirect_to_cube_face(img, face, face_size):
             pixels[i, j] = src_pixels[ui, vi]
     return cube_img
 
+def estimate_files_sizes(files_list):
+    print("\nАнализ исходников и расчёт будущего веса тайлов...")
+    estimates = []
+    
+    for item in files_list:
+        img_path = os.path.join(INPUT_DIR, item["filename"])
+        orig_mb = os.path.getsize(img_path) / (1024 * 1024)
+        img = Image.open(img_path)
+        
+        # Строим одну тестовую грань куба 2048x2048 для точного замера сжатия
+        sample_face = equirect_to_cube_face(img, 'f', 2048)
+        
+        preset_sizes = {}
+        for key, p_data in QUALITY_PRESETS.items():
+            q = p_data["quality"]
+            buf = io.BytesIO()
+            sample_face.save(buf, "JPEG", quality=q, optimize=True, progressive=True)
+            face_2048_bytes = buf.tell()
+            
+            # Учитываем 6 граней и все 3 уровня (2048 + 1024[0.25] + 512[0.0625] = x1.3125 + ~8% на заголовки тайлов)
+            total_bytes = face_2048_bytes * 6 * 1.38
+            preset_sizes[key] = total_bytes / (1024 * 1024)
+            
+        estimates.append({
+            "filename": item["filename"],
+            "scene_id": item["scene_id"],
+            "orig_mb": orig_mb,
+            "sizes": preset_sizes
+        })
+    return estimates
+def select_quality_preset(files_list):
+    estimates = estimate_files_sizes(files_list)
+    
+    print("\n=== ПРОГНОЗ ВЕСА ПАПОК ПОСЛЕ НАРЕЗКИ ===")
+    for est in estimates:
+        print(
+            f" • {est['filename']} (исходник: {est['orig_mb']:.2f} МБ) -> "
+            f"[1] ~{est['sizes']['1']:.2f} МБ | "
+            f"[2] ~{est['sizes']['2']:.2f} МБ | "
+            f"[3] ~{est['sizes']['3']:.2f} МБ"
+        )
+        
+    tot_1 = sum(e["sizes"]["1"] for e in estimates)
+    tot_2 = sum(e["sizes"]["2"] for e in estimates)
+    tot_3 = sum(e["sizes"]["3"] for e in estimates)
+    print("-" * 50)
+    print(f" ИТОГО ЗА ВСЕ ({len(estimates)} шт.): [1] ~{tot_1:.2f} МБ | [2] ~{tot_2:.2f} МБ | [3] ~{tot_3:.2f} МБ\n")
+
+    print("Выберите вариант качества перед нарезкой:")
+    for key, p_data in QUALITY_PRESETS.items():
+        print(f" [{key}] {p_data['name']} — {p_data['quality']}%")
+
+    while True:
+        choice = input("\nВведите номер варианта (1, 2 или 3, Enter = 2): ").strip()
+        if not choice:
+            return QUALITY_PRESETS["2"]["quality"]
+        if choice in QUALITY_PRESETS:
+            return QUALITY_PRESETS[choice]["quality"]
+        print("Ошибка: введите 1, 2 или 3.")
+
 def create_vertical_cube_preview(faces_dict, face_size=256):
     faces_order = ['b', 'd', 'f', 'l', 'r', 'u']
     preview_img = Image.new("RGB", (face_size, face_size * 6))
@@ -52,8 +119,17 @@ def create_vertical_cube_preview(faces_dict, face_size=256):
         
     return preview_img
 
-def process_panorama(img_path, scene_id):
-    print(f"Обработка: {img_path}...")
+def get_folder_size_mb(folder_path):
+    total_size = 0
+    for dirpath, _, filenames in os.walk(folder_path):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            if os.path.exists(fp):
+                total_size += os.path.getsize(fp)
+    return total_size / (1024 * 1024)
+
+def process_panorama(img_path, scene_id, tile_quality=75):
+    print(f"Нарезка: {img_path} (качество {tile_quality}%)...")
     img = Image.open(img_path)
     
     scene_root_dir = os.path.join(OUTPUT_DIR, scene_id)
@@ -65,8 +141,14 @@ def process_panorama(img_path, scene_id):
     for face in faces:
         generated_faces[face] = equirect_to_cube_face(img, face, max_face_size)
 
+    preview_quality = min(tile_quality, 70)
     preview_img = create_vertical_cube_preview(generated_faces, face_size=256)
-    preview_img.save(os.path.join(scene_root_dir, "preview.jpg"), "JPEG", quality=75)
+    preview_img.save(
+        os.path.join(scene_root_dir, "preview.jpg"), 
+        "JPEG", 
+        quality=preview_quality, 
+        optimize=True
+    )
 
     levels_config = [
         {"id": "1", "face_size": 512,  "tile_size": 512}, 
@@ -88,8 +170,16 @@ def process_panorama(img_path, scene_id):
                     tile = level_face_img.crop(box)
                     tile_dir = os.path.join(scene_root_dir, z_id, face, str(y))
                     os.makedirs(tile_dir, exist_ok=True)
-                    tile.save(os.path.join(tile_dir, f"{x}.jpg"), "JPEG", quality=85)
-
+                    tile.save(
+                        os.path.join(tile_dir, f"{x}.jpg"), 
+                        "JPEG", 
+                        quality=tile_quality, 
+                        optimize=True, 
+                        progressive=True
+                    )
+                    
+    final_size = get_folder_size_mb(scene_root_dir)
+    print(f" -> Готово! Фактический вес '{scene_root_dir}': {final_size:.2f} МБ")
 def ask_confirm(prompt):
     while True:
         ans = input(f"{prompt} (y/n): ").strip().lower()
@@ -108,7 +198,6 @@ def load_existing_data_js():
     return None
 
 def rebuild_all_hotspots(scenes):
-    # Очищено от автогенерации шаблонных стрелок, массивы создаются чистыми
     for scene in scenes:
         if "linkHotspots" not in scene:
             scene["linkHotspots"] = []
@@ -140,7 +229,6 @@ def generate_tour():
         os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     image_extensions = (".jpg", ".jpeg", ".png")
-    
     images_in_folder = []
     for f in sorted(os.listdir(INPUT_DIR)):
         if f.lower().endswith(image_extensions):
@@ -220,7 +308,6 @@ def generate_tour():
             elif choice in ['отмена', 'о', 'n', 'exit']:
                 print("Нарезка отменена пользователем.")
                 break
-
     elif not tile_set.issubset(img_set):
         print("\n[ИНФОРМАЦИЯ] В папке /tiles обнаружены папки, для которых нет исходных картинок в /images:")
         for t in tiles_folders:
@@ -248,7 +335,6 @@ def generate_tour():
 
     else:
         new_images_names = img_set - tile_set
-        
         if img_set == tile_set:
             print(f"\n[СИНХРОНИЗАЦИЯ] Структура папок '{OUTPUT_DIR}' совпадает с файлами в '{INPUT_DIR}'.")
             print("Названия идентичны, изменений в структуре нет.")
@@ -273,7 +359,6 @@ def generate_tour():
 
     if tiles_folders:
         available_for_replace = [t for t in tiles_folders if t["clean"] in img_set]
-        
         if available_for_replace:
             if ask_confirm("\nЖелаете переписать/обновить какие-то из доступных существующих панорам?"):
                 print("\nСписок доступных для обновления сцен:")
@@ -284,7 +369,6 @@ def generate_tour():
                 if user_input:
                     try:
                         chosen_indices = [int(x.strip()) - 1 for x in user_input.split(",") if x.strip().isdigit()]
-                        
                         for idx in chosen_indices:
                             if 0 <= idx < len(available_for_replace):
                                 target_tile = available_for_replace[idx]
@@ -292,7 +376,6 @@ def generate_tour():
                                 if img_match:
                                     slice_needed = True
                                     is_incremental = True
-                                    
                                     if not any(f["scene_id"] == target_tile["full"] for f in files_to_process):
                                         files_to_process.append({
                                             "pure_name": target_tile["clean"],
@@ -308,6 +391,7 @@ def generate_tour():
             existing_scenes.append(build_scene_data(t["full"], t["clean"]))
 
     if slice_needed and files_to_process:
+        selected_quality = select_quality_preset(files_to_process)
         processed_folders = []
         
         for item in files_to_process:
@@ -315,7 +399,7 @@ def generate_tour():
             scene_id = item["scene_id"]
             pure_name = item["pure_name"]
             
-            process_panorama(img_path, scene_id)
+            process_panorama(img_path, scene_id, tile_quality=selected_quality)
             if scene_id not in processed_folders:
                 processed_folders.append(scene_id)
             
@@ -326,7 +410,7 @@ def generate_tour():
                 existing_scenes.append(build_scene_data(scene_id, pure_name))
 
         print("\n=== ОТЧЕТ О НАРЕЗКЕ ТАЙЛОВ ===")
-        print("Тайлы успешно обработаны!")
+        print(f"Тайлы успешно обработаны (качество: {selected_quality}%)!")
         print("Созданные/Обновленные папки панорам:")
         for folder in processed_folders:
             print(f" - {OUTPUT_DIR}/{folder}")

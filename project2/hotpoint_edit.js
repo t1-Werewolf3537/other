@@ -26,16 +26,8 @@ function getCleanAppData() {
     return JSON.parse(content.substring(start, end));
 }
 
-function findActualScene(appData, searchId) {
-    if (!searchId) return null;
-    let scene = appData.scenes.find(s => s.id === searchId);
-    if (scene) return scene;
-    const match = searchId.match(/\d+/);
-    if (match) {
-        scene = appData.scenes.find(s => s.id.startsWith(match[0] + '_') || s.id === match[0]);
-        if (scene) return scene;
-    }
-    return appData.scenes.find(s => s.id.toLowerCase().includes(searchId.toLowerCase()));
+function saveAppData(appData) {
+    fs.writeFileSync(DATA_FILE_PATH, 'var APP_DATA = ' + JSON.stringify(appData, null, 2) + ';', 'utf8');
 }
 
 const server = http.createServer((req, res) => {
@@ -48,129 +40,85 @@ const server = http.createServer((req, res) => {
 
     if (req.method === 'GET' && parsedUrl.pathname === '/get-all-scenes-list') {
         try {
+            const list = getCleanAppData().scenes.map(s => ({ id: s.id, name: s.name || s.id }));
             res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-            res.end(JSON.stringify(getCleanAppData().scenes.map(s => ({ id: s.id, name: s.name || s.id }))));
+            res.end(JSON.stringify(list));
         } catch (e) { res.writeHead(500); res.end(e.message); }
         return;
     }
 
     if (req.method === 'GET' && parsedUrl.pathname === '/get-scene-data') {
         try {
-            const appData = getCleanAppData(), scene = findActualScene(appData, parsedUrl.searchParams.get('sceneId'));
+            const sceneId = parsedUrl.searchParams.get('sceneId');
+            const appData = getCleanAppData();
+            const scene = appData.scenes.find(s => s.id === sceneId);
             if (!scene) { res.writeHead(404); res.end('Сцена не найдена'); return; }
-            const hps = (scene.linkHotspots || []).map(hp => { const ts = appData.scenes.find(s => s.id === hp.target); return { targetId: hp.target, targetName: ts ? (ts.name || hp.target) : hp.target, yaw: hp.yaw, pitch: hp.pitch }; });
+
+            const hps = (scene.linkHotspots || []).map(hp => {
+                const ts = appData.scenes.find(s => s.id === hp.target);
+                return {
+                    targetId: hp.target,
+                    targetName: ts ? (ts.name || hp.target) : hp.target,
+                    yaw: hp.yaw,
+                    pitch: hp.pitch
+                };
+            });
+
             res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
             res.end(JSON.stringify({ id: scene.id, name: scene.name || scene.id, hotspots: hps }));
         } catch (e) { res.writeHead(500); res.end(e.message); }
         return;
     }
 
-
-
-
-
-
-
-
-
     if (req.method === 'POST' && parsedUrl.pathname === '/save-hotspot') {
-        let body = ''; req.on('data', chunk => { body += chunk.toString(); });
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
         req.on('end', () => {
             try {
                 const { sourceSceneId, targetSceneId, yaw, pitch } = JSON.parse(body);
                 const appData = getCleanAppData();
-                
-                // Находим исходную сцену, в которой нажал кнопку пользователь
-                const mainScene = findActualScene(appData, sourceSceneId);
-                if (!mainScene) { res.writeHead(404); res.end('Сцена не найдена'); return; }
+                const scene = appData.scenes.find(s => s.id === sourceSceneId);
+                if (!scene) { res.writeHead(404); res.end('Сцена не найдена'); return; }
 
-                // Определяем базовые имена (без _REPAIR) для вычисления парности
-                const isSourceRepair = mainScene.name.endsWith('_REPAIR');
-                const baseSourceName = isSourceRepair ? mainScene.name.replace('_REPAIR', '') : mainScene.name;
-                
-                const targetScene = appData.scenes.find(s => s.id === targetSceneId);
-                const isTargetRepair = targetScene ? targetScene.name.endsWith('_REPAIR') : false;
-                const baseTargetName = targetScene ? (isTargetRepair ? targetScene.name.replace('_REPAIR', '') : targetScene.name) : '';
-
-                // Массив сцен, в которые мы будем производить запись хотспота (оригинал + пара)
-                const scenesToUpdate = appData.scenes.filter(s => {
-                    return s.name === baseSourceName || s.name === baseSourceName + '_REPAIR';
+                if (!scene.linkHotspots) scene.linkHotspots = [];
+                scene.linkHotspots.push({
+                    yaw: parseFloat(yaw),
+                    pitch: parseFloat(pitch),
+                    rotation: 0,
+                    target: targetSceneId
                 });
 
-                scenesToUpdate.forEach(scene => {
-                    if (!scene.linkHotspots) scene.linkHotspots = [];
-                    
-                    // Определяем, куда должен вести хотспот из ТЕКУЩЕЙ модификации сцены
-                    let finalTargetId = targetSceneId;
-                    
-                    // Если текущая обновляемая сцена — REPAIR, то и вести она должна на REPAIR-модификацию цели
-                    if (scene.name.endsWith('_REPAIR')) {
-                        const repairTarget = appData.scenes.find(s => s.name === baseTargetName + '_REPAIR');
-                        if (repairTarget) finalTargetId = repairTarget.id;
-                    } else {
-                        // Если обычная сцена — должна вести на обычную цель
-                        const normalTarget = appData.scenes.find(s => s.name === baseTargetName);
-                        if (normalTarget) finalTargetId = normalTarget.id;
-                    }
-
-                    scene.linkHotspots.push({
-                        yaw: parseFloat(yaw),
-                        pitch: parseFloat(pitch),
-                        rotation: 0,
-                        target: finalTargetId
-                    });
-                    console.log(`[Синхронизация] Хотспот добавлен в "${scene.name}" (ID: ${scene.id}) -> Target ID: ${finalTargetId}`);
-                });
-
-                fs.writeFileSync(DATA_FILE_PATH, 'var APP_DATA = ' + JSON.stringify(appData, null, 2) + ';', 'utf8');
-                res.writeHead(200); res.end('OK');
+                console.log(`[Добавлено] Сцена "${scene.name}" (ID: ${scene.id}) -> Target ID: ${targetSceneId}`);
+                saveAppData(appData);
+                res.writeHead(200);
+                res.end('OK');
             } catch (e) { res.writeHead(500); res.end(e.message); }
         });
         return;
     }
 
-
-
-
-
-
-
-
-
-    // 👇 НАШ НОВЫЙ БЛОК УДАЛЕНИЯ ВСТАЛ СЮДA
     if (req.method === 'POST' && parsedUrl.pathname === '/delete-hotspot') {
-        let body = ''; req.on('data', chunk => { body += chunk.toString(); });
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
         req.on('end', () => {
             try {
                 const { sceneId, index } = JSON.parse(body);
                 const appData = getCleanAppData();
-                const currentScene = findActualScene(appData, sceneId);
+                const scene = appData.scenes.find(s => s.id === sceneId);
+                if (!scene) { res.writeHead(404); res.end('Scene not found'); return; }
 
-                if (!currentScene) { res.writeHead(404); res.end('Scene not found'); return; }
+                if (scene.linkHotspots && scene.linkHotspots[index] !== undefined) {
+                    console.log(`[Удалено] Сцена "${scene.name}" (ID: ${scene.id}), индекс: ${index}`);
+                    scene.linkHotspots.splice(index, 1);
+                }
 
-                const isRepair = currentScene.name.endsWith('_REPAIR');
-                const baseName = isRepair ? currentScene.name.replace('_REPAIR', '') : currentScene.name;
-
-                // Находим обе сцены (обычную и ремонтную)
-                const pairedScenes = appData.scenes.filter(s => s.name === baseName || s.name === baseName + '_REPAIR');
-
-                pairedScenes.forEach(scene => {
-                    if (scene.linkHotspots && scene.linkHotspots[index] !== undefined) {
-                        console.log(`[Синхронное удаление] Удален хотспот из сцены: ${scene.name} (Индекс: ${index})`);
-                        scene.linkHotspots.splice(index, 1);
-                    }
-                });
-
-                fs.writeFileSync(DATA_FILE_PATH, 'var APP_DATA = ' + JSON.stringify(appData, null, 2) + ';', 'utf8');
-                res.writeHead(200); res.end('Deleted');
+                saveAppData(appData);
+                res.writeHead(200);
+                res.end('Deleted');
             } catch (e) { res.writeHead(500); res.end(e.message); }
         });
         return;
     }
-
-
-    // 👆 КОНЕЦ БЛОКА УДАЛЕНИЯ
-
 
     const filePath = path.join(__dirname, decodeURIComponent(parsedUrl.pathname === '/' ? '/index.html' : parsedUrl.pathname));
     const ext = path.extname(filePath).toLowerCase();
@@ -183,14 +131,29 @@ const server = http.createServer((req, res) => {
             res.end(html.includes('</body>') ? html.replace('</body>', panelHtml + '\n</body>') : html + panelHtml);
         } else if (filePath === JS_FILE_PATH) {
             let js = fs.readFileSync(filePath, 'utf8');
+            // Привязываем ID сцены прямо к объекту Marzipano.Scene
+            js = js.replace(
+                'var scene = viewer.createScene({',
+                'var scene = viewer.createScene({'
+            );
+            js = js.replace(
+                'return {\n      data: sceneData,\n      scene: scene,\n      view: view\n    };',
+                'scene._customId = sceneData.id;\n    return {\n      data: sceneData,\n      scene: scene,\n      view: view\n    };'
+            );
             if (js.includes('window.viewer = viewer;')) {
-                js = js.replace('window.viewer = viewer;', 'window.viewer = viewer; window.customMarzipanoViewer = viewer; setTimeout(function(){ if(window.customMarzipanoViewer && window.updateEditorSceneContext) window.customMarzipanoViewer.addEventListener("sceneChange", window.updateEditorSceneContext); }, 400);');
+                js = js.replace(
+                    'window.viewer = viewer;',
+                    'window.viewer = viewer; viewer.addEventListener("sceneChange", function() { if (window.updateEditorSceneContext) window.updateEditorSceneContext(true); });'
+                );
             }
             res.end(js);
         } else {
             res.end(fs.readFileSync(filePath));
         }
-    } else { res.writeHead(404); res.end(); }
+    } else {
+        res.writeHead(404);
+        res.end();
+    }
 });
 
 server.listen(PORT, () => {
