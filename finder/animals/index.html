@@ -19,13 +19,20 @@
 
   <!-- Выезжающее меню выбора уровней -->
   <div id="sceneList">
-    <ul class="scenes" id="sceneListUl"></ul>
+    <div class="scene-list-panel">
+      <div class="scene-list-header">
+        <span>Уровни сцен</span>
+        <span id="total-progress-stat">0 / 0</span>
+      </div>
+      <ul class="scenes" id="sceneListUl"></ul>
+    </div>
   </div>
 
-  <!-- Верхняя плашка с названием и счетчиком -->
+  <!-- Верхняя плашка с названием, счетчиком и таймером -->
   <div id="titleBar">
     <h1 class="sceneName">Finder: Animals</h1>
-    <span id="puzzle-counter" class="puzzle-counter-badge">0 / 0</span>
+    <span id="puzzle-counter" class="hud-badge badge-blue" title="Найдено фрагментов">0 / 0</span>
+    <span id="game-timer" class="hud-badge badge-dark" title="Оставшееся время">00:00</span>
   </div>
 
   <!-- Кнопка открытия меню -->
@@ -62,12 +69,16 @@
     <div id="puzzle-inventory"></div>
   </div>
 
-  <!-- Окно победы -->
+  <!-- Окно победы / окончания времени -->
   <div id="win-modal" class="hidden">
     <div class="win-modal-card">
-      <h2>Уровень пройден!</h2>
-      <p>Все фрагменты панорамы найдены и собраны.</p>
-      <button id="win-restart-btn">Сыграть ещё раз</button>
+      <h2 id="modal-title">Уровень пройден!</h2>
+      <p id="modal-subtitle">Все фрагменты панорамы найдены.</p>
+      <div id="modal-stats" class="modal-stats-box"></div>
+      <div class="modal-actions">
+        <button id="win-restart-btn" class="btn-secondary">Заново</button>
+        <button id="win-next-btn" class="btn-primary">Следующий уровень →</button>
+      </div>
     </div>
   </div>
 
