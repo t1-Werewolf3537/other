@@ -785,7 +785,10 @@
 
     static isSupported() {
       if (typeof window === 'undefined' || !('DeviceOrientationEvent' in window)) return false;
-      return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+      const ua = navigator.userAgent || '';
+      const isMobileOS = /Android|iPhone|iPad|iPod/i.test(ua) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      return isMobileOS;
     }
 
     async enable() {
@@ -824,7 +827,7 @@
     toggle() {
       if (this._enabled) {
         this.disable();
-        return Promise.resolve(false);
+        return Promise.resolve(true);
       }
       return this.enable();
     }
@@ -839,29 +842,32 @@
       }
     }
 
-    _deviceQuat(alphaDeg, betaDeg, gammaDeg, screenAngleDeg) {
+        _deviceQuat(alphaDeg, betaDeg, gammaDeg, screenAngleDeg) {
       const a = alphaDeg * DEG2RAD;
       const b = betaDeg * DEG2RAD;
       const g = gammaDeg * DEG2RAD;
-      const s = screenAngleDeg * DEG2RAD;
+      const s = -screenAngleDeg * DEG2RAD;
 
-      const c1 = Math.cos(a / 2), s1 = Math.sin(a / 2);
-      const c2 = Math.cos(b / 2), s2 = Math.sin(b / 2);
-      const c3 = Math.cos(g / 2), s3 = Math.sin(g / 2);
+      // Стандартная формула W3C DeviceOrientation Z-X'-Y'' -> Quaternion
+      const cZ = Math.cos(a * 0.5), sZ = Math.sin(a * 0.5);
+      const cX = Math.cos(b * 0.5), sX = Math.sin(b * 0.5);
+      const cY = Math.cos(g * 0.5), sY = Math.sin(g * 0.5);
 
-      const qx = c1 * s2 * c3 + s1 * c2 * s3;
-      const qy = s1 * c2 * c3 - c1 * s2 * s3;
-      const qz = c1 * c2 * s3 - s1 * s2 * c3;
-      const qw = c1 * c2 * c3 + s1 * s2 * s3;
+      const qx = sX * cY * cZ - cX * sY * sZ;
+      const qy = cX * sY * cZ + sX * cY * sZ;
+      const qz = cX * cY * sZ + sX * sY * cZ;
+      const qw = cX * cY * cZ - sX * sY * sZ;
 
-      const invSqrt2 = Math.SQRT1_2;
-      let tx = qx * invSqrt2 - qw * invSqrt2;
-      let ty = qy * invSqrt2 + qz * invSqrt2;
-      let tz = qz * invSqrt2 - qy * invSqrt2;
-      let tw = qw * invSqrt2 + qx * invSqrt2;
+      // Поворот на -90° вокруг X (камера смотрит из задней стенки телефона)
+      const k = Math.SQRT1_2;
+      let tx = (qx - qw) * k;
+      let ty = (qy + qz) * k;
+      let tz = (qz - qy) * k;
+      let tw = (qw + qx) * k;
 
+      // Компенсация поворота экрана вокруг оси Z камеры
       if (s !== 0) {
-        const cs = Math.cos(-s / 2), ss = Math.sin(-s / 2);
+        const cs = Math.cos(s * 0.5), ss = Math.sin(s * 0.5);
         const rx = tx * cs + ty * ss;
         const ry = ty * cs - tx * ss;
         const rz = tz * cs + tw * ss;
@@ -872,9 +878,10 @@
       return [tx, ty, tz, tw];
     }
 
-    _quatMulConj(q, ref) {
-      const ax = q[0], ay = q[1], az = q[2], aw = q[3];
-      const bx = -ref[0], by = -ref[1], bz = -ref[2], bw = ref[3];
+    _quatConjMul(ref, q) {
+      // conjugate(ref) * q — локальный поворот относительно стартовой позы
+      const ax = -ref, ay = -ref, az = -ref, aw = ref;
+      const bx = q, by = q, bz = q, bw = q;
       return [
         aw * bx + ax * bw + ay * bz - az * by,
         aw * by - ax * bz + ay * bw + az * bx,
@@ -903,15 +910,17 @@
         return;
       }
 
-      const dq = this._quatMulConj(curQ, this._refQuat);
-      const x = dq[0], y = dq[1], z = dq[2], w = dq[3];
+      const dq = this._quatConjMul(this._refQuat, curQ);
+      const x = dq, y = dq, z = dq, w = dq;
 
+      // Вектор взгляда вперед (0, 0, -1), повернутый кватернионом dq
       const vx = -2 * (x * z + w * y);
       const vy = -2 * (y * z - w * x);
       const vz = -(1 - 2 * (x * x + y * y));
 
-      const relYaw = Math.atan2(vx, -vz);
-      const relPitch = Math.asin(clamp(-vy, -1, 1));
+      // Горизонтальный поворот (влево-вправо) и наклон (вверх-вниз)
+      const relYaw = Math.atan2(-vx, -vz);
+      const relPitch = Math.asin(clamp(vy, -1, 1));
 
       const targetYaw = this._baseYaw + relYaw;
       const targetPitch = clamp(this._basePitch + relPitch, -Math.PI / 2, Math.PI / 2);
@@ -924,8 +933,8 @@
         let diffYaw = targetYaw - this._smoothYaw;
         while (diffYaw > Math.PI) diffYaw -= 2 * Math.PI;
         while (diffYaw < -Math.PI) diffYaw += 2 * Math.PI;
-        this._smoothYaw += diffYaw * 0.35;
-        this._smoothPitch += (targetPitch - this._smoothPitch) * 0.35;
+        this._smoothYaw += diffYaw * 0.25;
+        this._smoothPitch += (targetPitch - this._smoothPitch) * 0.25;
       }
 
       v.setYaw(this._smoothYaw);

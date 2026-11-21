@@ -543,7 +543,7 @@
       gyroBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         gyroCtrl.toggle().then(function(ok) {
-          if (!ok && !gyroCtrl.isEnabled()) {
+          if (!ok) {
             alert('Разрешите доступ к датчикам движения в настройках браузера (работает только по HTTPS).');
           }
         });
