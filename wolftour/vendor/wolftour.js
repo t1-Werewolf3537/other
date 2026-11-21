@@ -844,7 +844,7 @@
       }
     }
 
-    _getWorldAngles(alphaDeg, betaDeg, gammaDeg, screenAngleDeg) {
+        _getWorldAngles(alphaDeg, betaDeg, gammaDeg, screenAngleDeg) {
       const a = alphaDeg * DEG2RAD;
       const b = betaDeg * DEG2RAD;
       const g = gammaDeg * DEG2RAD;
@@ -860,26 +860,31 @@
       const lookN = -sA * sG + cA * sB * cG;
       const lookU = -cB * cG;
 
-      // Поправка на поворот экрана (портрет / ландшафт)
-      let dirE = lookE, dirN = lookN, dirU = lookU;
-      if (s !== 0) {
-        const upE = sA * cB;
-        const upN = -cA * cB;
-        const upU = sB;
-        const rightE = cA * cG - sA * sB * sG;
-        const rightN = sA * cG + cA * sB * sG;
-        const rightU = -cB * sG;
+      // Вектор верхнего торца телефона (0, 1, 0) и правого края (1, 0, 0)
+      const devUpE = -sA * cB;
+      const devUpN = cA * cB;
+      const devUpU = sB;
 
-        const cS = Math.cos(s), sS = Math.sin(s);
-        // При повороте экрана корректируем ось взгляда
-        dirE = lookE;
-        dirN = lookN;
-        dirU = lookU * cS + (sS > 0 ? -rightU : rightU) * Math.abs(sS);
-      }
+      const devRightE = cA * cG - sA * sB * sG;
+      const devRightN = sA * cG + cA * sB * sG;
+      const devRightU = -cB * sG;
 
-      // Мировой азимут (по часовой стрелке от Севера) и наклон относительно горизонта
-      const worldYaw = Math.atan2(dirE, dirN);
-      const worldPitch = Math.asin(clamp(-dirU, -1, 1));
+      // Реальный «верх» экрана с учётом портретной/альбомной ориентации
+      const cS = Math.cos(s), sS = Math.sin(s);
+      const scrUpE = devUpE * cS - devRightE * sS;
+      const scrUpN = devUpN * cS - devRightN * sS;
+
+      // Защита от сингулярности в надире (пол) и зените (потолок):
+      // когда луч камеры уходит вертикально вниз (lookU < 0), его горизонтальную
+      // проекцию заменяет направление верхнего торца экрана (scrUp);
+      // когда вверх (lookU > 0) — направление нижнего торца (-scrUp).
+      const poleSign = lookU > 0 ? -1 : 1;
+      const absU = Math.abs(lookU);
+      const horizE = lookE + poleSign * absU * scrUpE;
+      const horizN = lookN + poleSign * absU * scrUpN;
+
+      const worldYaw = Math.atan2(horizE, horizN);
+      const worldPitch = Math.asin(clamp(-lookU, -1, 1));
       return { yaw: worldYaw, pitch: worldPitch };
     }
 
