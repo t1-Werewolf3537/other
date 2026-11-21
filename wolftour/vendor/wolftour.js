@@ -842,13 +842,12 @@
       }
     }
 
-        _deviceQuat(alphaDeg, betaDeg, gammaDeg, screenAngleDeg) {
+    _deviceQuat(alphaDeg, betaDeg, gammaDeg, screenAngleDeg) {
       const a = alphaDeg * DEG2RAD;
       const b = betaDeg * DEG2RAD;
       const g = gammaDeg * DEG2RAD;
       const s = -screenAngleDeg * DEG2RAD;
 
-      // Стандартная формула W3C DeviceOrientation Z-X'-Y'' -> Quaternion
       const cZ = Math.cos(a * 0.5), sZ = Math.sin(a * 0.5);
       const cX = Math.cos(b * 0.5), sX = Math.sin(b * 0.5);
       const cY = Math.cos(g * 0.5), sY = Math.sin(g * 0.5);
@@ -858,14 +857,12 @@
       const qz = cX * cY * sZ + sX * sY * cZ;
       const qw = cX * cY * cZ - sX * sY * sZ;
 
-      // Поворот на -90° вокруг X (камера смотрит из задней стенки телефона)
       const k = Math.SQRT1_2;
       let tx = (qx - qw) * k;
       let ty = (qy + qz) * k;
       let tz = (qz - qy) * k;
       let tw = (qw + qx) * k;
 
-      // Компенсация поворота экрана вокруг оси Z камеры
       if (s !== 0) {
         const cs = Math.cos(s * 0.5), ss = Math.sin(s * 0.5);
         const rx = tx * cs + ty * ss;
@@ -875,19 +872,18 @@
         tx = rx; ty = ry; tz = rz; tw = rw;
       }
 
-      return [tx, ty, tz, tw];
+      return { x: tx, y: ty, z: tz, w: tw };
     }
 
     _quatConjMul(ref, q) {
-      // conjugate(ref) * q — локальный поворот относительно стартовой позы
-      const ax = -ref, ay = -ref, az = -ref, aw = ref;
-      const bx = q, by = q, bz = q, bw = q;
-      return [
-        aw * bx + ax * bw + ay * bz - az * by,
-        aw * by - ax * bz + ay * bw + az * bx,
-        aw * bz + ax * by - ay * bx + az * bw,
-        aw * bw - ax * bx - ay * by - az * bz
-      ];
+      const ax = -ref.x, ay = -ref.y, az = -ref.z, aw = ref.w;
+      const bx = q.x, by = q.y, bz = q.z, bw = q.w;
+      return {
+        x: aw * bx + ax * bw + ay * bz - az * by,
+        y: aw * by - ax * bz + ay * bw + az * bx,
+        z: aw * bz + ax * by - ay * bx + az * bw,
+        w: aw * bw - ax * bx - ay * by - az * bz
+      };
     }
 
     _onOrientation(e) {
@@ -911,14 +907,12 @@
       }
 
       const dq = this._quatConjMul(this._refQuat, curQ);
-      const x = dq, y = dq, z = dq, w = dq;
+      const x = dq.x, y = dq.y, z = dq.z, w = dq.w;
 
-      // Вектор взгляда вперед (0, 0, -1), повернутый кватернионом dq
       const vx = -2 * (x * z + w * y);
       const vy = -2 * (y * z - w * x);
       const vz = -(1 - 2 * (x * x + y * y));
 
-      // Горизонтальный поворот (влево-вправо) и наклон (вверх-вниз)
       const relYaw = Math.atan2(-vx, -vz);
       const relPitch = Math.asin(clamp(vy, -1, 1));
 
@@ -937,10 +931,12 @@
         this._smoothPitch += (targetPitch - this._smoothPitch) * 0.25;
       }
 
-      v.setYaw(this._smoothYaw);
-      v.setPitch(this._smoothPitch);
-      this._viewer._dirty = true;
-      this._viewer.emit('viewChange');
+      if (!isNaN(this._smoothYaw) && !isNaN(this._smoothPitch)) {
+        v.setYaw(this._smoothYaw);
+        v.setPitch(this._smoothPitch);
+        this._viewer._dirty = true;
+        this._viewer.emit('viewChange');
+      }
     }
   }
 
