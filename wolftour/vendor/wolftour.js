@@ -761,6 +761,180 @@
     }
   }
 
+  // =========================================================================
+  // КОНТРОЛЛЕР ГИРОСКОПА С ОТНОСИТЕЛЬНОЙ ПРИВЯЗКОЙ К ТОЧКЕ СТАРТА
+  // =========================================================================
+  class GyroscopeController extends EventEmitter {
+    constructor(viewer) {
+      super();
+      this._viewer = viewer;
+      this._enabled = false;
+      this._calibrated = false;
+      this._baseYaw = 0;
+      this._basePitch = 0;
+      this._refQuat = null;
+      this._smoothYaw = 0;
+      this._smoothPitch = 0;
+      this._hasSmooth = false;
+      this._onOrientation = this._onOrientation.bind(this);
+    }
+
+    isEnabled() {
+      return this._enabled;
+    }
+
+    static isSupported() {
+      if (typeof window === 'undefined' || !('DeviceOrientationEvent' in window)) return false;
+      return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    }
+
+    async enable() {
+      if (this._enabled) return true;
+      if (typeof DeviceOrientationEvent === 'undefined') return false;
+
+      if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+        try {
+          const state = await DeviceOrientationEvent.requestPermission();
+          if (state !== 'granted') return false;
+        } catch (e) {
+          return false;
+        }
+      }
+
+      const v = this._viewer.view();
+      this._baseYaw = v ? v.yaw() : 0;
+      this._basePitch = v ? v.pitch() : 0;
+      this._calibrated = false;
+      this._refQuat = null;
+      this._hasSmooth = false;
+      this._enabled = true;
+
+      window.addEventListener('deviceorientation', this._onOrientation, true);
+      this.emit('change', true);
+      return true;
+    }
+
+    disable() {
+      if (!this._enabled) return;
+      this._enabled = false;
+      window.removeEventListener('deviceorientation', this._onOrientation, true);
+      this.emit('change', false);
+    }
+
+    toggle() {
+      if (this._enabled) {
+        this.disable();
+        return Promise.resolve(false);
+      }
+      return this.enable();
+    }
+
+    offsetManual(dYaw, dPitch) {
+      if (!this._enabled) return;
+      this._baseYaw += dYaw;
+      this._basePitch = clamp(this._basePitch + dPitch, -Math.PI / 2, Math.PI / 2);
+      if (this._hasSmooth) {
+        this._smoothYaw += dYaw;
+        this._smoothPitch = clamp(this._smoothPitch + dPitch, -Math.PI / 2, Math.PI / 2);
+      }
+    }
+
+    _deviceQuat(alphaDeg, betaDeg, gammaDeg, screenAngleDeg) {
+      const a = alphaDeg * DEG2RAD;
+      const b = betaDeg * DEG2RAD;
+      const g = gammaDeg * DEG2RAD;
+      const s = screenAngleDeg * DEG2RAD;
+
+      const c1 = Math.cos(a / 2), s1 = Math.sin(a / 2);
+      const c2 = Math.cos(b / 2), s2 = Math.sin(b / 2);
+      const c3 = Math.cos(g / 2), s3 = Math.sin(g / 2);
+
+      const qx = c1 * s2 * c3 + s1 * c2 * s3;
+      const qy = s1 * c2 * c3 - c1 * s2 * s3;
+      const qz = c1 * c2 * s3 - s1 * s2 * c3;
+      const qw = c1 * c2 * c3 + s1 * s2 * s3;
+
+      const invSqrt2 = Math.SQRT1_2;
+      let tx = qx * invSqrt2 - qw * invSqrt2;
+      let ty = qy * invSqrt2 + qz * invSqrt2;
+      let tz = qz * invSqrt2 - qy * invSqrt2;
+      let tw = qw * invSqrt2 + qx * invSqrt2;
+
+      if (s !== 0) {
+        const cs = Math.cos(-s / 2), ss = Math.sin(-s / 2);
+        const rx = tx * cs + ty * ss;
+        const ry = ty * cs - tx * ss;
+        const rz = tz * cs + tw * ss;
+        const rw = tw * cs - tz * ss;
+        tx = rx; ty = ry; tz = rz; tw = rw;
+      }
+
+      return [tx, ty, tz, tw];
+    }
+
+    _quatMulConj(q, ref) {
+      const ax = q[0], ay = q[1], az = q[2], aw = q[3];
+      const bx = -ref[0], by = -ref[1], bz = -ref[2], bw = ref[3];
+      return [
+        aw * bx + ax * bw + ay * bz - az * by,
+        aw * by - ax * bz + ay * bw + az * bx,
+        aw * bz + ax * by - ay * bx + az * bw,
+        aw * bw - ax * bx - ay * by - az * bz
+      ];
+    }
+
+    _onOrientation(e) {
+      if (!this._enabled || e.alpha == null || e.beta == null || e.gamma == null) return;
+      const v = this._viewer.view();
+      if (!v) return;
+
+      let screenAngle = 0;
+      if (window.screen && window.screen.orientation && typeof window.screen.orientation.angle === 'number') {
+        screenAngle = window.screen.orientation.angle;
+      } else if (typeof window.orientation === 'number') {
+        screenAngle = window.orientation;
+      }
+
+      const curQ = this._deviceQuat(e.alpha, e.beta, e.gamma, screenAngle);
+
+      if (!this._calibrated) {
+        this._refQuat = curQ;
+        this._calibrated = true;
+        return;
+      }
+
+      const dq = this._quatMulConj(curQ, this._refQuat);
+      const x = dq[0], y = dq[1], z = dq[2], w = dq[3];
+
+      const vx = -2 * (x * z + w * y);
+      const vy = -2 * (y * z - w * x);
+      const vz = -(1 - 2 * (x * x + y * y));
+
+      const relYaw = Math.atan2(vx, -vz);
+      const relPitch = Math.asin(clamp(-vy, -1, 1));
+
+      const targetYaw = this._baseYaw + relYaw;
+      const targetPitch = clamp(this._basePitch + relPitch, -Math.PI / 2, Math.PI / 2);
+
+      if (!this._hasSmooth) {
+        this._smoothYaw = targetYaw;
+        this._smoothPitch = targetPitch;
+        this._hasSmooth = true;
+      } else {
+        let diffYaw = targetYaw - this._smoothYaw;
+        while (diffYaw > Math.PI) diffYaw -= 2 * Math.PI;
+        while (diffYaw < -Math.PI) diffYaw += 2 * Math.PI;
+        this._smoothYaw += diffYaw * 0.35;
+        this._smoothPitch += (targetPitch - this._smoothPitch) * 0.35;
+      }
+
+      v.setYaw(this._smoothYaw);
+      v.setPitch(this._smoothPitch);
+      this._viewer._dirty = true;
+      this._viewer.emit('viewChange');
+    }
+  }
+
   let SCENE_UID_COUNTER = 1;
 
   class Scene {
@@ -815,6 +989,7 @@
       this._velYaw = 0;
       this._velPitch = 0;
       this._lastTime = performance.now();
+      this._gyro = new GyroscopeController(this);
 
       this.updateSize();
       window.addEventListener('resize', () => this.updateSize());
@@ -829,6 +1004,7 @@
 
     scene() { return this._currentScene; }
     view() { return this._currentScene ? this._currentScene.view() : null; }
+    gyroscope() { return this._gyro; }
     setScrollLocked(locked) { this._scrollLocked = Boolean(locked); }
 
     updateSize() {
@@ -914,6 +1090,9 @@
         const dPitch = -(dy / h) * vfov * this._dragSpeed;
         v.offsetYaw(dYaw);
         v.offsetPitch(dPitch);
+        if (this._gyro && this._gyro.isEnabled()) {
+          this._gyro.offsetManual(dYaw, dPitch);
+        }
         this._velYaw = this._velYaw * 0.45 + (dYaw * 55) * 0.55;
         this._velPitch = this._velPitch * 0.45 + (dPitch * 55) * 0.55;
 
@@ -1019,6 +1198,7 @@
     CubeGeometry,
     ImageUrlSource,
     Hotspot,
-    HotspotContainer
+    HotspotContainer,
+    GyroscopeController
   };
 })(typeof window !== 'undefined' ? window : this);

@@ -14,6 +14,7 @@
   var ENABLE_REPAIR_SWITCH = true; // true = тумблер отделки включен, false = полностью скрыт
   var ENABLE_MINIMAP = true;        // true = планировка включена, false = полностью скрыта
   var ENABLE_FULLSCREEN = true;    // true = кнопка полноэкранного режима включена, false = скрыта
+  var ENABLE_GYROSCOPE = true;     // true = кнопка гироскопа включена на мобильных, false = скрыта
   var SMART_SCROLL = true;          // true = умный скролл в iframe (зум после клика или с Ctrl)
   var START_WITH_REPAIR = false;    // true = старт с ремонтом (_REPAIR), false = без ремонта
   var START_SCENE_INDEX = 2;        // Индекс стартовой сцены (нумерация с 0)
@@ -523,6 +524,30 @@
       });
       document.addEventListener('fullscreenchange', syncFsState);
       document.addEventListener('webkitfullscreenchange', syncFsState);
+    }
+  }
+
+  // Гироскоп с привязкой к точке старта (управляется через ENABLE_GYROSCOPE)
+  var gyroBtn = document.getElementById('gyroscope-toggle-btn');
+  if (gyroBtn) {
+    var gyroSupported = WolfTour.GyroscopeController && WolfTour.GyroscopeController.isSupported();
+    if (!ENABLE_GYROSCOPE || !gyroSupported) {
+      gyroBtn.classList.add('is-hidden');
+    } else {
+      gyroBtn.classList.remove('is-hidden');
+      var gyroCtrl = viewer.gyroscope();
+      gyroCtrl.addEventListener('change', function(active) {
+        gyroBtn.classList.toggle('is-active', active);
+        gyroBtn.title = active ? 'Выключить гироскоп' : 'Управление гироскопом';
+      });
+      gyroBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        gyroCtrl.toggle().then(function(ok) {
+          if (!ok && !gyroCtrl.isEnabled()) {
+            alert('Разрешите доступ к датчикам движения в настройках браузера (работает только по HTTPS).');
+          }
+        });
+      });
     }
   }
 
