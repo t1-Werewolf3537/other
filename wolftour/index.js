@@ -11,11 +11,12 @@
   // =========================================================================
   // ГЛАВНЫЕ НАСТРОЙКИ ПРОЕКТА
   // =========================================================================
-  var ENABLE_REPAIR_SWITCH = false; // true = тумблер отделки включен, false = полностью скрыт
+  var ENABLE_REPAIR_SWITCH = true; // true = тумблер отделки включен, false = полностью скрыт
   var START_WITH_REPAIR = false;    // true = старт с ремонтом (_REPAIR), false = без ремонта
-  var START_SCENE_INDEX = 3;        // Индекс стартовой сцены (нумерация с 0)
-  var APARTMENT_TITLE = "Тип-10Л | 2-ЕВРО 47м²";
-  var TILES_URL = "https://storage.yandexcloud.net/tours.wolf-studio.ru/other/wolftour/tiles";          // Путь к тайлам: "tiles" или ссылка на Яндекс Облако (без слеша на конце)
+  var START_SCENE_INDEX = 2;        // Индекс стартовой сцены (нумерация с 0)
+  var KEEP_VIEW_ANGLE = true;       // true = смотреть по ходу движения, false = стартовый ракурс сцены (initialViewParameters)
+  var APARTMENT_TITLE = "Wolf Tour";
+  var TILES_URL = "tiles";          // Путь к тайлам: "tiles" или ссылка на Яндекс Облако (без слеша на конце)
   // =========================================================================
 
   var isWhiteStyle = ENABLE_REPAIR_SWITCH ? START_WITH_REPAIR : false;
@@ -141,7 +142,7 @@
     return scene;
   }
 
-  // Переключение сцен с сохранением ракурса без рывков
+  // Переключение сцен
   function switchScene(scene, keepViewAngle) {
     if (!scene) return;
 
@@ -154,6 +155,8 @@
         pitch: currentView.pitch(),
         fov: currentView.fov()
       });
+    } else if (!keepViewAngle && finalScene.data && finalScene.data.initialViewParameters && finalScene.view) {
+      finalScene.view.setParameters(finalScene.data.initialViewParameters);
     }
 
     finalScene.scene.switchTo();
@@ -195,7 +198,7 @@
           event.stopPropagation();
           var targetScene = findSceneById(sceneData.id);
           if (targetScene) {
-            switchScene(targetScene, true);
+            switchScene(targetScene, KEEP_VIEW_ANGLE);
           }
         });
 
@@ -215,7 +218,7 @@
     icon.style.transform = 'rotate(' + hotspot.rotation + 'rad)';
 
     wrapper.addEventListener('click', function() {
-      switchScene(findSceneById(hotspot.target), true);
+      switchScene(findSceneById(hotspot.target), KEEP_VIEW_ANGLE);
     });
 
     stopTouchAndScrollEventPropagation(wrapper);
@@ -242,7 +245,7 @@
     return null;
   }
   // Запуск стартовой сцены с проверкой границ массива
-  var baseStartScene = scenes[START_SCENE_INDEX] || scenes;
+  var baseStartScene = scenes[START_SCENE_INDEX] || scenes[0];
   var startScene = resolveSceneVariant(baseStartScene);
 
   if (startScene) {
