@@ -772,7 +772,8 @@
       this._calibrated = false;
       this._baseYaw = 0;
       this._basePitch = 0;
-      this._refQuat = null;
+      this._refYaw = 0;
+      this._refPitch = 0;
       this._smoothYaw = 0;
       this._smoothPitch = 0;
       this._hasSmooth = false;
@@ -808,7 +809,8 @@
       this._baseYaw = v ? v.yaw() : 0;
       this._basePitch = v ? v.pitch() : 0;
       this._calibrated = false;
-      this._refQuat = null;
+      this._refYaw = 0;
+      this._refPitch = 0;
       this._hasSmooth = false;
       this._enabled = true;
 
@@ -842,48 +844,43 @@
       }
     }
 
-    _deviceQuat(alphaDeg, betaDeg, gammaDeg, screenAngleDeg) {
+    _getWorldAngles(alphaDeg, betaDeg, gammaDeg, screenAngleDeg) {
       const a = alphaDeg * DEG2RAD;
       const b = betaDeg * DEG2RAD;
       const g = gammaDeg * DEG2RAD;
-      const s = -screenAngleDeg * DEG2RAD;
+      const s = screenAngleDeg * DEG2RAD;
 
-      const cZ = Math.cos(a * 0.5), sZ = Math.sin(a * 0.5);
-      const cX = Math.cos(b * 0.5), sX = Math.sin(b * 0.5);
-      const cY = Math.cos(g * 0.5), sY = Math.sin(g * 0.5);
+      // Матрица поворота устройства Z(alpha) -> X(beta) -> Y(gamma)
+      const cA = Math.cos(a), sA = Math.sin(a);
+      const cB = Math.cos(b), sB = Math.sin(b);
+      const cG = Math.cos(g), sG = Math.sin(g);
 
-      const qx = sX * cY * cZ - cX * sY * sZ;
-      const qy = cX * sY * cZ + sX * cY * sZ;
-      const qz = cX * cY * sZ + sX * sY * cZ;
-      const qw = cX * cY * cZ - sX * sY * sZ;
+      // Вектор взгляда задней камеры (0, 0, -1) в мировых координатах (East, North, Up)
+      const lookE = -cA * sG - sA * sB * cG;
+      const lookN = -sA * sG + cA * sB * cG;
+      const lookU = -cB * cG;
 
-      const k = Math.SQRT1_2;
-      let tx = (qx - qw) * k;
-      let ty = (qy + qz) * k;
-      let tz = (qz - qy) * k;
-      let tw = (qw + qx) * k;
-
+      // Поправка на поворот экрана (портрет / ландшафт)
+      let dirE = lookE, dirN = lookN, dirU = lookU;
       if (s !== 0) {
-        const cs = Math.cos(s * 0.5), ss = Math.sin(s * 0.5);
-        const rx = tx * cs + ty * ss;
-        const ry = ty * cs - tx * ss;
-        const rz = tz * cs + tw * ss;
-        const rw = tw * cs - tz * ss;
-        tx = rx; ty = ry; tz = rz; tw = rw;
+        const upE = sA * cB;
+        const upN = -cA * cB;
+        const upU = sB;
+        const rightE = cA * cG - sA * sB * sG;
+        const rightN = sA * cG + cA * sB * sG;
+        const rightU = -cB * sG;
+
+        const cS = Math.cos(s), sS = Math.sin(s);
+        // При повороте экрана корректируем ось взгляда
+        dirE = lookE;
+        dirN = lookN;
+        dirU = lookU * cS + (sS > 0 ? -rightU : rightU) * Math.abs(sS);
       }
 
-      return { x: tx, y: ty, z: tz, w: tw };
-    }
-
-    _quatConjMul(ref, q) {
-      const ax = -ref.x, ay = -ref.y, az = -ref.z, aw = ref.w;
-      const bx = q.x, by = q.y, bz = q.z, bw = q.w;
-      return {
-        x: aw * bx + ax * bw + ay * bz - az * by,
-        y: aw * by - ax * bz + ay * bw + az * bx,
-        z: aw * bz + ax * by - ay * bx + az * bw,
-        w: aw * bw - ax * bx - ay * by - az * bz
-      };
+      // Мировой азимут (по часовой стрелке от Севера) и наклон относительно горизонта
+      const worldYaw = Math.atan2(dirE, dirN);
+      const worldPitch = Math.asin(clamp(-dirU, -1, 1));
+      return { yaw: worldYaw, pitch: worldPitch };
     }
 
     _onOrientation(e) {
@@ -898,26 +895,24 @@
         screenAngle = window.orientation;
       }
 
-      const curQ = this._deviceQuat(e.alpha, e.beta, e.gamma, screenAngle);
+      const cur = this._getWorldAngles(e.alpha, e.beta, e.gamma, screenAngle);
 
       if (!this._calibrated) {
-        this._refQuat = curQ;
+        this._refYaw = cur.yaw;
+        this._refPitch = cur.pitch;
         this._calibrated = true;
         return;
       }
 
-      const dq = this._quatConjMul(this._refQuat, curQ);
-      const x = dq.x, y = dq.y, z = dq.z, w = dq.w;
+      // Разница углов с инверсией обеих осей под естественное движение камеры
+      let relYaw = cur.yaw - this._refYaw;
+      while (relYaw > Math.PI) relYaw -= 2 * Math.PI;
+      while (relYaw < -Math.PI) relYaw += 2 * Math.PI;
 
-      const vx = -2 * (x * z + w * y);
-      const vy = -2 * (y * z - w * x);
-      const vz = -(1 - 2 * (x * x + y * y));
-
-      const relYaw = Math.atan2(-vx, -vz);
-      const relPitch = Math.asin(clamp(vy, -1, 1));
+      const relPitch = cur.pitch - this._refPitch;
 
       const targetYaw = this._baseYaw + relYaw;
-      const targetPitch = clamp(this._basePitch + relPitch, -Math.PI / 2, Math.PI / 2);
+      const targetPitch = clamp(this._basePitch + relPitch, -Math.PI * 0.48, Math.PI * 0.48);
 
       if (!this._hasSmooth) {
         this._smoothYaw = targetYaw;
