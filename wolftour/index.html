@@ -23,6 +23,11 @@
   <!-- Контейнер панорамы -->
   <div id="pano"></div>
 
+  <!-- Подсказка при прокрутке внутри iframe -->
+  <div id="iframe-scroll-hint" aria-hidden="true">
+    Кликните по 3D-туру или зажмите Ctrl для масштабирования
+  </div>
+
   <!-- Выезжающее меню выбора других квартир -->
   <div id="sceneList">
     <ul class="scenes">
@@ -56,6 +61,22 @@
   <div class="custom-dynamic-image-container">
     <img src="img/text_zhk.png" class="dynamic-responsive-img" alt="ЖК Маяковский">
   </div>
+
+  <!-- Кнопка полноэкранного режима (управляется через ENABLE_FULLSCREEN) -->
+  <button type="button" id="fullscreen-toggle-btn" class="fullscreen-btn" title="На полный экран" aria-label="На полный экран">
+    <svg class="fs-icon-enter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="15 3 21 3 21 9"></polyline>
+      <polyline points="9 21 3 21 3 15"></polyline>
+      <line x1="21" y1="3" x2="14" y2="10"></line>
+      <line x1="3" y1="21" x2="10" y2="14"></line>
+    </svg>
+    <svg class="fs-icon-exit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="4 14 10 14 10 20"></polyline>
+      <polyline points="20 10 14 10 14 4"></polyline>
+      <line x1="14" y1="10" x2="21" y2="3"></line>
+      <line x1="3" y1="21" x2="10" y2="14"></line>
+    </svg>
+  </button>
 
   <!-- Водяной знак Wolf Studio -->
   <a href="https://wolf-studio.ru" target="_blank" rel="noopener noreferrer" class="custom-wolf-watermark-bottom">

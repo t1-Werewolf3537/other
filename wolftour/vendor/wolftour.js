@@ -811,6 +811,7 @@
       const ctrl = (this._opts && this._opts.controls) || {};
       this._dragSpeed = ctrl.dragSpeed != null ? ctrl.dragSpeed : 0.75;
       this._inertiaDamping = ctrl.inertiaDamping != null ? ctrl.inertiaDamping : 4.5;
+      this._scrollLocked = Boolean(ctrl.scrollLocked);
       this._velYaw = 0;
       this._velPitch = 0;
       this._lastTime = performance.now();
@@ -828,6 +829,7 @@
 
     scene() { return this._currentScene; }
     view() { return this._currentScene ? this._currentScene.view() : null; }
+    setScrollLocked(locked) { this._scrollLocked = Boolean(locked); }
 
     updateSize() {
       const w = this._dom.clientWidth || 1;
@@ -941,7 +943,12 @@
       el.style.cursor = 'grab';
 
       el.addEventListener('wheel', (e) => {
+        if (this._scrollLocked && !e.ctrlKey && !e.metaKey) {
+          this.emit('scrollBlocked');
+          return;
+        }
         e.preventDefault();
+        e.stopPropagation();
         const v = this.view();
         if (!v) return;
         const delta = (e.deltaMode === 1 ? e.deltaY * 20 : e.deltaY) * 0.001;

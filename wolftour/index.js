@@ -13,6 +13,8 @@
   // =========================================================================
   var ENABLE_REPAIR_SWITCH = true; // true = тумблер отделки включен, false = полностью скрыт
   var ENABLE_MINIMAP = true;        // true = планировка включена, false = полностью скрыта
+  var ENABLE_FULLSCREEN = true;    // true = кнопка полноэкранного режима включена, false = скрыта
+  var SMART_SCROLL = true;          // true = умный скролл в iframe (зум после клика или с Ctrl)
   var START_WITH_REPAIR = false;    // true = старт с ремонтом (_REPAIR), false = без ремонта
   var START_SCENE_INDEX = 2;        // Индекс стартовой сцены (нумерация с 0)
   var KEEP_VIEW_ANGLE = true;       // true = смотреть по ходу движения, false = стартовый ракурс сцены (initialViewParameters)
@@ -60,15 +62,46 @@
     window.removeEventListener('touchstart', onFirstTouch);
   });
 
-  // Инициализация вьюера WolfTour
+  // Определение запуска внутри iframe и инициализация вьюера WolfTour
+  var isInIframe = false;
+  try { isInIframe = window.self !== window.top; } catch (e) { isInIframe = true; }
+  var useSmartScroll = SMART_SCROLL && isInIframe;
+
   var viewer = new WolfTour.Viewer(panoElement, {
     controls: {
       mouseViewMode: data.settings.mouseViewMode,
       dragSpeed: CAMERA_DRAG_SPEED,
-      inertiaDamping: CAMERA_INERTIA
+      inertiaDamping: CAMERA_INERTIA,
+      scrollLocked: useSmartScroll
     }
   });
   window.viewer = viewer;
+
+  // Умный скролл в iframe и защита от прокрутки страницы при тач-жестах
+  if (useSmartScroll) {
+    var scrollHintEl = document.getElementById('iframe-scroll-hint');
+    var scrollHintTimer = null;
+    viewer.addEventListener('scrollBlocked', function() {
+      if (!scrollHintEl) return;
+      scrollHintEl.classList.add('is-visible');
+      clearTimeout(scrollHintTimer);
+      scrollHintTimer = setTimeout(function() {
+        scrollHintEl.classList.remove('is-visible');
+      }, 1800);
+    });
+    var unlockScroll = function() {
+      viewer.setScrollLocked(false);
+      if (scrollHintEl) scrollHintEl.classList.remove('is-visible');
+    };
+    panoElement.addEventListener('pointerdown', unlockScroll);
+    window.addEventListener('blur', function() {
+      viewer.setScrollLocked(true);
+    });
+  }
+  panoElement.addEventListener('touchmove', function(e) {
+    if (e.cancelable) e.preventDefault();
+  }, { passive: false });
+
 
   // Создание сцен
   var scenes = data.scenes.map(function(sceneData) {
@@ -448,6 +481,49 @@
       mapWrapper.classList.remove('active-state');
       mapOpenBtn.classList.remove('hidden-state');
     });
+  }
+
+  // Полноэкранный режим (включается через ENABLE_FULLSCREEN в редакторе)
+  var fsBtn = document.getElementById('fullscreen-toggle-btn');
+  if (fsBtn) {
+    if (!ENABLE_FULLSCREEN) {
+      fsBtn.classList.add('is-hidden');
+    } else {
+      fsBtn.classList.remove('is-hidden');
+      var isPseudoFs = false;
+      var syncFsState = function() {
+        var active = Boolean(document.fullscreenElement || document.webkitFullscreenElement || isPseudoFs);
+        fsBtn.classList.toggle('is-fullscreen', active);
+        fsBtn.title = active ? 'Свернуть из полного экрана' : 'На полный экран';
+      };
+      var togglePseudoFs = function(forceState) {
+        isPseudoFs = typeof forceState === 'boolean' ? forceState : !isPseudoFs;
+        syncFsState();
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: 'wolftour:fullscreen', active: isPseudoFs }, '*');
+        }
+      };
+      fsBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var docEl = document.documentElement;
+        var fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+        if (fsEl) {
+          var exit = document.exitFullscreen || document.webkitExitFullscreen;
+          if (exit) exit.call(document).catch(function() { togglePseudoFs(false); });
+        } else if (isPseudoFs) {
+          togglePseudoFs(false);
+        } else {
+          var req = docEl.requestFullscreen || docEl.webkitRequestFullscreen;
+          if (req) {
+            req.call(docEl).catch(function() { togglePseudoFs(true); });
+          } else {
+            togglePseudoFs(true);
+          }
+        }
+      });
+      document.addEventListener('fullscreenchange', syncFsState);
+      document.addEventListener('webkitfullscreenchange', syncFsState);
+    }
   }
 
 })();
