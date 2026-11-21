@@ -808,6 +808,9 @@
       this._fadeStart = 0;
       this._fadeDuration = 450;
 
+      const ctrl = (this._opts && this._opts.controls) || {};
+      this._dragSpeed = ctrl.dragSpeed != null ? ctrl.dragSpeed : 0.75;
+      this._inertiaDamping = ctrl.inertiaDamping != null ? ctrl.inertiaDamping : 4.5;
       this._velYaw = 0;
       this._velPitch = 0;
       this._lastTime = performance.now();
@@ -905,12 +908,12 @@
         const vfov = v.fov();
         const hfov = vtoh(vfov, w, h);
 
-        const dYaw = -(dx / w) * hfov;
-        const dPitch = -(dy / h) * vfov;
+        const dYaw = -(dx / w) * hfov * this._dragSpeed;
+        const dPitch = -(dy / h) * vfov * this._dragSpeed;
         v.offsetYaw(dYaw);
         v.offsetPitch(dPitch);
-        this._velYaw = dYaw * 60;
-        this._velPitch = dPitch * 60;
+        this._velYaw = this._velYaw * 0.45 + (dYaw * 55) * 0.55;
+        this._velPitch = this._velPitch * 0.45 + (dPitch * 55) * 0.55;
 
         if (pointers.size >= 2) {
           const dist = getDist();
@@ -965,7 +968,7 @@
         if (v) {
           v.offsetYaw(this._velYaw * dt);
           v.offsetPitch(this._velPitch * dt);
-          const damping = Math.exp(-6 * dt);
+          const damping = Math.exp(-this._inertiaDamping * dt);
           this._velYaw *= damping;
           this._velPitch *= damping;
           this._dirty = true;

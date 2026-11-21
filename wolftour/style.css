@@ -5,7 +5,7 @@
 :root {
   /* Мини-карта: ширина от экрана */
   --map-width-desktop: 33vw;
-  --map-width-mobile: 90vw;
+  --map-width-mobile: 85vw;
 
   /* Картинка с текстом под логотипом ЖК */
   --dynamic-image-scale-pc: 1.0;
@@ -17,10 +17,14 @@
   --switch-text-scale-mobile: 0.85;
 
   /* Точки и луч-радар мини-карты */
-  --map-point-size: 2.5cqw;
-  --map-dot-size: 3.8cqw;
-  --map-radar-width: 16.5cqw;
-  --map-radar-height: 19cqw;
+  --map-point-size: 2.6cqw;
+  --map-dot-size: 3cqw;
+  --map-radar-width: 13cqw;
+  --map-radar-height: 17cqw;
+
+  /* Размер текста верхней плашки */
+  --title-font-desktop: 24px;
+  --title-font-mobile: 13px;
 }
 
 * {
@@ -93,6 +97,7 @@ body.multiple-scenes.mobile #titleBar { left: 50px; }
 #titleBar .sceneName {
   width: 100%;
   height: 100%;
+  font-size: var(--title-font-desktop);
   line-height: 30px;
   padding: 5px;
   background-color: rgba(20, 25, 35, 0.6);
@@ -105,6 +110,7 @@ body.multiple-scenes.mobile #titleBar { left: 50px; }
 }
 
 .mobile #titleBar .sceneName {
+  font-size: var(--title-font-mobile);
   line-height: 40px;
 }
 

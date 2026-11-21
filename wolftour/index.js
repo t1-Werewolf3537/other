@@ -18,6 +18,8 @@
   var KEEP_VIEW_ANGLE = true;       // true = смотреть по ходу движения, false = стартовый ракурс сцены (initialViewParameters)
   var APARTMENT_TITLE = "Wolf Tour";
   var TILES_URL = "tiles";          // Путь к тайлам: "tiles" или ссылка на Яндекс Облако (без слеша на конце)
+  var CAMERA_DRAG_SPEED = 0.65;     // Скорость вращения камеры (0.3 - плавно, 1.0 - стандарт)
+  var CAMERA_INERTIA = 4.5;         // Затухание инерции (2.0 - длинный докат, 8.0 - быстрая остановка)
   // =========================================================================
 
   var isWhiteStyle = ENABLE_REPAIR_SWITCH ? START_WITH_REPAIR : false;
@@ -61,7 +63,9 @@
   // Инициализация вьюера WolfTour
   var viewer = new WolfTour.Viewer(panoElement, {
     controls: {
-      mouseViewMode: data.settings.mouseViewMode
+      mouseViewMode: data.settings.mouseViewMode,
+      dragSpeed: CAMERA_DRAG_SPEED,
+      inertiaDamping: CAMERA_INERTIA
     }
   });
   window.viewer = viewer;
