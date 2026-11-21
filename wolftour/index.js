@@ -12,6 +12,7 @@
   // ГЛАВНЫЕ НАСТРОЙКИ ПРОЕКТА
   // =========================================================================
   var ENABLE_REPAIR_SWITCH = true; // true = тумблер отделки включен, false = полностью скрыт
+  var ENABLE_MINIMAP = true;        // true = планировка включена, false = полностью скрыта
   var START_WITH_REPAIR = false;    // true = старт с ремонтом (_REPAIR), false = без ремонта
   var START_SCENE_INDEX = 2;        // Индекс стартовой сцены (нумерация с 0)
   var KEEP_VIEW_ANGLE = true;       // true = смотреть по ходу движения, false = стартовый ракурс сцены (initialViewParameters)
@@ -99,6 +100,14 @@
       });
     }
 
+    // Создание информационных значков
+    if (sceneData.infoHotspots) {
+      sceneData.infoHotspots.forEach(function(infoSpot) {
+        var infoEl = createInfoHotspotElement(infoSpot);
+        scene.hotspotContainer().createHotspot(infoEl, { yaw: infoSpot.yaw, pitch: infoSpot.pitch });
+      });
+    }
+
     return {
       data: sceneData,
       scene: scene,
@@ -160,6 +169,7 @@
     }
 
     finalScene.scene.switchTo();
+    syncRadarAngle(finalScene.view);
 
     if (sceneNameElement) {
       sceneNameElement.textContent = APARTMENT_TITLE;
@@ -224,6 +234,80 @@
     stopTouchAndScrollEventPropagation(wrapper);
     wrapper.appendChild(icon);
 
+    return wrapper;
+  }
+
+  // Создание элемента информационного значка
+  function createInfoHotspotElement(spot) {
+    var wrapper = document.createElement('div');
+    wrapper.classList.add('hotspot', 'info-hotspot');
+
+    var icon = document.createElement('img');
+    icon.src = spot.icon || 'img/info.png';
+    icon.alt = spot.title || 'Информация';
+    icon.classList.add('info-hotspot-icon');
+    wrapper.appendChild(icon);
+
+    if (spot.openMode === 'link') {
+      if (spot.title) {
+        var tag = document.createElement('div');
+        tag.classList.add('info-hotspot-tag');
+        tag.textContent = spot.title;
+        wrapper.appendChild(tag);
+      }
+      wrapper.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (spot.url) window.open(spot.url, '_blank', 'noopener,noreferrer');
+      });
+    } else {
+      var card = document.createElement('div');
+      card.classList.add('info-hotspot-card');
+
+      var closeBtn = document.createElement('button');
+      closeBtn.type = 'button';
+      closeBtn.classList.add('info-hotspot-close');
+      closeBtn.innerHTML = '&times;';
+      closeBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        wrapper.classList.remove('is-open');
+      });
+      card.appendChild(closeBtn);
+
+      if (spot.title) {
+        var titleEl = document.createElement('div');
+        titleEl.classList.add('info-hotspot-title');
+        titleEl.textContent = spot.title;
+        card.appendChild(titleEl);
+      }
+      if (spot.text) {
+        var textEl = document.createElement('div');
+        textEl.classList.add('info-hotspot-text');
+        textEl.textContent = spot.text;
+        card.appendChild(textEl);
+      }
+      if (spot.url) {
+        var linkEl = document.createElement('a');
+        linkEl.href = spot.url;
+        linkEl.target = '_blank';
+        linkEl.rel = 'noopener noreferrer';
+        linkEl.classList.add('info-hotspot-btn');
+        linkEl.textContent = spot.linkText || 'Подробнее';
+        card.appendChild(linkEl);
+      }
+
+      wrapper.appendChild(card);
+
+      icon.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var wasOpen = wrapper.classList.contains('is-open');
+        document.querySelectorAll('.info-hotspot.is-open').forEach(function(el) {
+          el.classList.remove('is-open');
+        });
+        if (!wasOpen) wrapper.classList.add('is-open');
+      });
+    }
+
+    stopTouchAndScrollEventPropagation(wrapper);
     return wrapper;
   }
 
@@ -320,18 +404,28 @@
   }
 
   // Вращение луча радара на мини-карте
+  function syncRadarAngle(viewObj) {
+    var mapDot = document.getElementById('mini-map-dot');
+    if (!mapDot || !viewObj) return;
+    var degrees = viewObj.yaw() * (180 / Math.PI);
+    mapDot.style.transform = 'translate(-50%, -50%) rotate(' + (degrees + 180) + 'deg)';
+  }
+
   viewer.addEventListener('viewChange', function() {
     var currentScene = viewer.scene();
-    var mapDot = document.getElementById('mini-map-dot');
-
-    if (currentScene && mapDot) {
-      var liveView = currentScene.view();
-      if (!liveView) return;
-
-      var degrees = liveView.yaw() * (180 / Math.PI);
-      mapDot.style.transform = 'translate(-50%, -50%) rotate(' + (degrees + 180) + 'deg)';
-    }
+    if (currentScene) syncRadarAngle(currentScene.view());
   });
+
+  if (startScene && startScene.view) {
+    syncRadarAngle(startScene.view);
+  }
+
+  if (!ENABLE_MINIMAP) {
+    var btnMap = document.getElementById('mini-map-toggle-btn');
+    var wrapMap = document.getElementById('mini-map-wrapper');
+    if (btnMap) btnMap.style.display = 'none';
+    if (wrapMap) wrapMap.style.display = 'none';
+  }
 
   // Сворачивание и разворачивание мини-карты
   var mapOpenBtn = document.getElementById('mini-map-toggle-btn');

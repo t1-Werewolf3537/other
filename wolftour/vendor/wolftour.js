@@ -530,11 +530,11 @@
         this._pump();
       };
 
-      if (job.desc.previewIndex >= 0) {
+            if (job.desc.previewIndex >= 0) {
         this._loadPreviewSlice(job.desc.url, job.desc.previewIndex, done);
       } else {
         const img = new Image();
-        img.crossOrigin = 'anonymous';
+        if (/^https?:\/\//i.test(job.desc.url)) img.crossOrigin = 'anonymous';
         img.onload = () => done(img);
         img.onerror = () => done(null);
         img.src = job.desc.url;
@@ -563,7 +563,7 @@
       entry = { img: null, error: false, waiters: [sliceFromImg] };
       this.previewCache.set(url, entry);
       const img = new Image();
-      img.crossOrigin = 'anonymous';
+      if (/^https?:\/\//i.test(url)) img.crossOrigin = 'anonymous';
       img.onload = () => {
         entry.img = img;
         entry.waiters.forEach(fn => fn(img));
@@ -795,10 +795,11 @@
       this._overlayEl.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden;';
       this._dom.appendChild(this._overlayEl);
 
-      this._gl = this._canvas.getContext('webgl', { alpha: true, antialias: true, premultipliedAlpha: true });
+      const glOpts = { alpha: false, antialias: true, depth: true, preserveDrawingBuffer: false };
+      this._gl = this._canvas.getContext('webgl', glOpts) || this._canvas.getContext('experimental-webgl', glOpts);
       this._dirty = true;
       this._texMgr = new TextureManager(this._gl, () => { this._dirty = true; });
-      this._cubeRenderer = new CubeRenderer(this._gl);
+      this._cubeRenderer = this._gl ? new CubeRenderer(this._gl) : null;
 
       this._scenes = [];
       this._currentScene = null;
@@ -813,6 +814,10 @@
 
       this.updateSize();
       window.addEventListener('resize', () => this.updateSize());
+      window.addEventListener('orientationchange', () => setTimeout(() => this.updateSize(), 150));
+      if (typeof ResizeObserver !== 'undefined') {
+        new ResizeObserver(() => this.updateSize()).observe(this._dom);
+      }
       this._bindControls();
       this._loop = this._loop.bind(this);
       requestAnimationFrame(this._loop);
@@ -946,6 +951,14 @@
     _loop(now) {
       const dt = Math.min((now - this._lastTime) / 1000, 0.1);
       this._lastTime = now;
+
+      const curW = this._dom.clientWidth || 0;
+      const curH = this._dom.clientHeight || 0;
+      if (curW > 0 && curH > 0 && (curW !== this._lastDomW || curH !== this._lastDomH)) {
+        this._lastDomW = curW;
+        this._lastDomH = curH;
+        this.updateSize();
+      }
 
       if (Math.abs(this._velYaw) > 1e-4 || Math.abs(this._velPitch) > 1e-4) {
         const v = this.view();

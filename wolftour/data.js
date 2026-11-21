@@ -82,7 +82,26 @@ var APP_DATA = {
           "target": "3"
         }
       ],
-      "infoHotspots": []
+      "infoHotspots": [
+        {
+          "yaw": -1.7678469725773311,
+          "pitch": 0.17435426724118486,
+          "icon": "img/circle.png",
+          "openMode": "card",
+          "title": "Карточка Телек",
+          "text": "Описание Без ремонта",
+          "url": "ссылка"
+        },
+        {
+          "yaw": -1.5151961914173562,
+          "pitch": 0.22732555137745436,
+          "icon": "img/circle.png",
+          "openMode": "card",
+          "title": "Карточка Телек",
+          "text": "Описание Без ремонта и С ремонтом",
+          "url": "ссылка"
+        }
+      ]
     },
     {
       "id": "3",
@@ -112,9 +131,9 @@ var APP_DATA = {
       ],
       "faceSize": 2048,
       "initialViewParameters": {
-        "yaw": 0,
-        "pitch": 0,
-        "fov": 1.7
+        "yaw": 0.478851,
+        "pitch": 0.263399,
+        "fov": 1.778351
       },
       "linkHotspots": [
         {
@@ -358,7 +377,26 @@ var APP_DATA = {
           "target": "9"
         }
       ],
-      "infoHotspots": []
+      "infoHotspots": [
+        {
+          "yaw": -1.5151961914173562,
+          "pitch": 0.22732555137745436,
+          "icon": "img/circle.png",
+          "openMode": "card",
+          "title": "Карточка Телек",
+          "text": "Описание Без ремонта и С ремонтом",
+          "url": "ссылка"
+        },
+        {
+          "yaw": -1.665752318949151,
+          "pitch": 0.4452429782837708,
+          "icon": "img/circle.png",
+          "openMode": "link",
+          "title": "Ярлык Телек",
+          "text": "Описание С ремонтом",
+          "url": "ссылка"
+        }
+      ]
     },
     {
       "id": "9",
@@ -388,9 +426,9 @@ var APP_DATA = {
       ],
       "faceSize": 2048,
       "initialViewParameters": {
-        "yaw": 0,
-        "pitch": 0,
-        "fov": 1.2
+        "yaw": 0.478851,
+        "pitch": 0.263399,
+        "fov": 1.778351
       },
       "linkHotspots": [
         {
