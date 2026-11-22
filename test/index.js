@@ -1,10 +1,34 @@
-/**
+/*!
+ * ============================================================================
  * WolfTour Engine — Основная логика виртуального тура
- * Разработка: Wolf Studio (https://wolf-studio.ru)
+ * © 2026 Wolf Studio (https://wolf-studio.ru) | Кирилл Бахарев. Все права защищены.
+ *
+ * ВНИМАНИЕ: Данный программный код является интеллектуальной собственностью
+ * правообладателя. Запрещено копировать, модифицировать, распространять,
+ * декомпилировать или размещать данный код и его части на любых сайтах
+ * и серверах без предварительного письменного согласия автора.
+ * Незаконное использование преследуется по закону (ст. 1259, 1301 ГК РФ).
+ * ============================================================================
  */
 'use strict';
 
 (function() {
+  var COPYRIGHT_NOTICE = '© 2026 Wolf Studio (https://wolf-studio.ru) | Кирилл Бахарев. Все права защищены. Использование, копирование и размещение кода на сторонних сайтах без письменного согласия правообладателя запрещены.';
+  try {
+    Object.defineProperty(window, 'WOLFTOUR_COPYRIGHT', {
+      value: COPYRIGHT_NOTICE,
+      writable: false,
+      configurable: false
+    });
+    if (typeof console !== 'undefined' && console.log) {
+      console.log(
+        '%c WolfTour Engine %c ' + COPYRIGHT_NOTICE,
+        'background:#007bff;color:#fff;font-weight:bold;padding:3px 6px;border-radius:3px;',
+        'color:#9aa5b1;padding:3px 0;'
+      );
+    }
+  } catch (e) {}
+
   var WolfTour = window.WolfTour;
   var data = window.APP_DATA;
 
