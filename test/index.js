@@ -15,7 +15,7 @@
   var ENABLE_MINIMAP = true;        // true = планировка включена, false = полностью скрыта
   var ENABLE_FULLSCREEN = false;    // true = кнопка полноэкранного режима включена, false = скрыта
   var ENABLE_GYROSCOPE = true;     // true = кнопка гироскопа включена на мобильных, false = скрыта
-  var ENABLE_DEMO_WATERMARK = true; // true = тестовая сетка поверх панорамы (для демо заказчику)
+  var ENABLE_DEMO_WATERMARK = false; // true = тестовая сетка поверх панорамы (для демо заказчику)
   var SMART_SCROLL = true;          // true = умный скролл в iframe (зум после клика или с Ctrl)
   var START_WITH_REPAIR = false;    // true = старт с ремонтом (_REPAIR), false = без ремонта
   var START_SCENE_INDEX = 2;        // Индекс стартовой сцены (нумерация с 0)
