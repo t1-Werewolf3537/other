@@ -1035,8 +1035,24 @@ body.multiple-scenes.mobile #titleBar { left: 50px; }
   transition: transform 0.15s ease, background-color 0.2s ease;
 }
 
+@keyframes compareHandlePulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.55), 0 0 0 0 rgba(0, 123, 255, 0.65);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.12);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.65), 0 0 0 10px rgba(0, 123, 255, 0);
+  }
+}
+
+.compare-slider.is-pulsing .compare-slider-handle {
+  animation: compareHandlePulse 1.8s ease-in-out infinite;
+}
+
 .compare-slider-handle:hover,
 .compare-slider.is-dragging .compare-slider-handle {
+  animation: none;
   background: rgba(0, 123, 255, 0.9);
   transform: translate(-50%, -50%) scale(1.1);
 }

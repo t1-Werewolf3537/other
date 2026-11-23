@@ -126,6 +126,15 @@
       viewer.setScrollLocked(true);
     });
   }
+  document.addEventListener('touchstart', function(e) {
+    if (e.touches && e.touches.length === 1) {
+      var x = e.touches[0].clientX;
+      if (x < 30 || x > window.innerWidth - 30) {
+        if (e.cancelable) e.preventDefault();
+      }
+    }
+  }, { passive: false });
+
   panoElement.addEventListener('touchmove', function(e) {
     if (e.cancelable) e.preventDefault();
   }, { passive: false });
@@ -461,6 +470,7 @@
     if (mapImageEl) mapImageEl.src = 'img/plan_REPAIR.jpg';
     if (compareSliderEl && compareHandleEl) {
       compareSliderEl.classList.remove('is-hidden');
+      compareSliderEl.classList.add('is-pulsing');
       compareSliderEl.style.left = (currentSplitRatio * 100) + '%';
 
       var hideCompareHint = function() {
@@ -477,9 +487,12 @@
       var draggingSlider = false;
       var updateSliderByClientX = function(clientX) {
         var rect = panoElement.getBoundingClientRect();
-        var ratio = (clientX - rect.left) / Math.max(1, rect.width);
+        var edgePad = 22;
+        var usableW = Math.max(1, rect.width - edgePad * 2);
+        var ratio = (clientX - rect.left - edgePad) / usableW;
         currentSplitRatio = Math.max(0, Math.min(1, ratio));
-        compareSliderEl.style.left = (currentSplitRatio * 100).toFixed(2) + '%';
+        var visualPx = edgePad + currentSplitRatio * usableW;
+        compareSliderEl.style.left = visualPx.toFixed(1) + 'px';
         if (viewer.setSplitRatio) viewer.setSplitRatio(currentSplitRatio);
 
         if (mapImageEl) {
@@ -491,9 +504,18 @@
         }
       };
 
+      compareHandleEl.addEventListener('touchstart', function(e) {
+        if (e.cancelable) e.preventDefault();
+      }, { passive: false });
+      compareHandleEl.addEventListener('touchmove', function(e) {
+        if (e.cancelable) e.preventDefault();
+      }, { passive: false });
+
       compareHandleEl.addEventListener('pointerdown', function(e) {
         e.stopPropagation();
+        if (e.cancelable) e.preventDefault();
         draggingSlider = true;
+        compareSliderEl.classList.remove('is-pulsing');
         compareSliderEl.classList.add('is-dragging');
         compareHandleEl.setPointerCapture(e.pointerId);
         hideCompareHint();

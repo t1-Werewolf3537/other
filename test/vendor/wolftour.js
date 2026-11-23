@@ -872,46 +872,36 @@
       }
     }
 
-        _getWorldAngles(alphaDeg, betaDeg, gammaDeg, screenAngleDeg) {
+    _buildRotationMatrix(alphaDeg, betaDeg, gammaDeg, screenAngleDeg) {
       const a = alphaDeg * DEG2RAD;
       const b = betaDeg * DEG2RAD;
       const g = gammaDeg * DEG2RAD;
-      const s = screenAngleDeg * DEG2RAD;
+      const s = -screenAngleDeg * DEG2RAD;
 
-      // Матрица поворота устройства Z(alpha) -> X(beta) -> Y(gamma)
       const cA = Math.cos(a), sA = Math.sin(a);
       const cB = Math.cos(b), sB = Math.sin(b);
       const cG = Math.cos(g), sG = Math.sin(g);
 
-      // Вектор взгляда задней камеры (0, 0, -1) в мировых координатах (East, North, Up)
-      const lookE = -cA * sG - sA * sB * cG;
-      const lookN = -sA * sG + cA * sB * cG;
-      const lookU = -cB * cG;
+      // Матрица Z(alpha) * X(beta) * Y(gamma)
+      const r00 = cA * cG - sA * sB * sG;
+      const r01 = -sA * cB;
+      const r02 = cA * sG + sA * sB * cG;
 
-      // Вектор верхнего торца телефона (0, 1, 0) и правого края (1, 0, 0)
-      const devUpE = -sA * cB;
-      const devUpN = cA * cB;
-      const devUpU = sB;
+      const r10 = sA * cG + cA * sB * sG;
+      const r11 = cA * cB;
+      const r12 = sA * sG - cA * sB * cG;
 
-      const devRightE = cA * cG - sA * sB * sG;
-      const devRightN = sA * cG + cA * sB * sG;
-      const devRightU = -cB * sG;
+      const r20 = -cB * sG;
+      const r21 = sB;
+      const r22 = cB * cG;
 
-      // Реальный «верх» и «право» экрана с учётом портретной/альбомной ориентации
+      // Умножаем справа на поворот экрана Z(-screenAngle)
       const cS = Math.cos(s), sS = Math.sin(s);
-      const scrUpE = devUpE * cS - devRightE * sS;
-      const scrUpN = devUpN * cS - devRightN * sS;
-      const scrUpU = devUpU * cS - devRightU * sS;
-
-      // Плавная проекция без скачка знака на горизонте (poleSign меняем только при |lookU| > 0.7)
-      const blend = Math.max(0, (Math.abs(lookU) - 0.5) * 2);
-      const poleSign = scrUpU >= 0 ? 1 : -1;
-      const horizE = lookE + poleSign * blend * scrUpE;
-      const horizN = lookN + poleSign * blend * scrUpN;
-
-      const worldYaw = Math.atan2(horizE, horizN);
-      const worldPitch = Math.asin(clamp(-lookU, -1, 1));
-      return { yaw: worldYaw, pitch: worldPitch };
+      return [
+        r00 * cS + r01 * sS, -r00 * sS + r01 * cS, r02,
+        r10 * cS + r11 * sS, -r10 * sS + r11 * cS, r12,
+        r20 * cS + r21 * sS, -r20 * sS + r21 * cS, r22
+      ];
     }
 
     _onOrientation(e) {
@@ -926,21 +916,28 @@
         screenAngle = window.orientation;
       }
 
-      const cur = this._getWorldAngles(e.alpha, e.beta, e.gamma, screenAngle);
+      const m = this._buildRotationMatrix(e.alpha, e.beta, e.gamma, screenAngle);
+      // Вектор взгляда задней камеры в мировых координатах: m * [0, 0, -1]
+      const lx = -m[2], ly = -m[5], lz = -m[8];
 
       if (!this._calibrated) {
-        this._refYaw = cur.yaw;
-        this._refPitch = cur.pitch;
+        // Сохраняем начальный базис экрана (право, верх, взгляд) в точке старта
+        this._refRight = [m[0], m[3], m[6]];
+        this._refUp = [m[1], m[4], m[7]];
+        this._refForward = [lx, ly, lz];
+        // Угол наклона телефона на старте (чтобы компенсировать наклон руки)
+        this._refPitch = Math.asin(clamp(-lz, -1, 1));
         this._calibrated = true;
         return;
       }
 
-      // Разница углов с инверсией обеих осей под естественное движение камеры
-      let relYaw = cur.yaw - this._refYaw;
-      while (relYaw > Math.PI) relYaw -= 2 * Math.PI;
-      while (relYaw < -Math.PI) relYaw += 2 * Math.PI;
+      // Проекция текущего взгляда (lx, ly, lz) на стартовую горизонтальную плоскость
+      const dotF = lx * this._refForward[0] + ly * this._refForward[1] + lz * this._refForward[2];
+      const dotR = lx * this._refRight[0] + ly * this._refRight[1] + lz * this._refRight[2];
+      const relYaw = Math.atan2(dotR, dotF);
 
-      const relPitch = cur.pitch - this._refPitch;
+      const curPitch = Math.asin(clamp(-lz, -1, 1));
+      const relPitch = curPitch - this._refPitch;
 
       this._targetYaw = this._baseYaw + relYaw;
       this._targetPitch = clamp(this._basePitch + relPitch, -Math.PI * 0.48, Math.PI * 0.48);
