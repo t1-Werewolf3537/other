@@ -896,8 +896,8 @@
 
       // Реальный «верх» экрана с учётом портретной/альбомной ориентации
       const cS = Math.cos(s), sS = Math.sin(s);
-      const scrUpE = devUpE * cS - devRightE * sS;
-      const scrUpN = devUpN * cS - devRightN * sS;
+      const scrUpE = devUpE * cS + devRightE * sS;
+      const scrUpN = devUpN * cS + devRightN * sS;
 
       // В вертикали и альбоме в надире (lookU < 0) верх экрана смотрит вперёд (+scrUp),
       // а в зените (lookU > 0) — назад (-scrUp), но применяем это только при наклоне > 45°
