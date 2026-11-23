@@ -482,10 +482,11 @@ body.multiple-scenes.mobile #titleBar { left: 50px; }
   translate: -50% -50%;
   scale: 1;
   animation: mapPointSyncPulse 1.5s ease-in-out infinite;
-  transition: scale 0.2s ease-in-out, opacity 0.2s;
+  transition: scale 0.2s ease-in-out, opacity 0.2s, background-color 0.2s ease-in-out;
 }
 
 .no-touch .map-nav-point:hover {
+  background-color: var(--map-dot-color);
   scale: 1.25;
   opacity: 1;
 }
