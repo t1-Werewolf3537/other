@@ -37,7 +37,9 @@
   // =========================================================================
   var ENABLE_REPAIR_SWITCH = true; // true = сравнение отделки включено, false = полностью скрыто
   var REPAIR_COMPARE_MODE = "switch"; // "slider" = шторка До/После на экране, "switch" = iOS-тумблер
+  var ENABLE_SWITCH_HINT = true;   // true = показывать подсказку под iOS-тумблером, false = скрыть
   var ENABLE_MINIMAP = true;        // true = планировка включена, false = полностью скрыта
+  var ENABLE_MINIMAP_HINT = true;  // true = показывать подсказку над кнопкой «Планировка», false = скрыть
   var MINIMAP_OPEN_DESKTOP = false; // true = планировка сразу открыта на ПК, false = свёрнута
   var MINIMAP_OPEN_MOBILE = false;  // true = планировка сразу открыта на мобильных, false = свёрнута
   var ENABLE_FULLSCREEN = false;    // true = кнопка полноэкранного режима включена, false = скрыта
@@ -133,7 +135,7 @@
       return;
     }
     if (e.touches && e.touches.length === 1) {
-      var x = e.touches.clientX;
+      var x = e.touches[0].clientX;
       if (x < 30 || x > window.innerWidth - 30) {
         if (e.cancelable) e.preventDefault();
       }
@@ -549,7 +551,9 @@
     syncInterfaceStyle();
 
     if (finishToggleInput) {
-      if (hintBox && !finishToggleInput.checked) {
+      if (hintBox && !ENABLE_SWITCH_HINT) {
+        hintBox.style.display = 'none';
+      } else if (hintBox && !finishToggleInput.checked) {
         requestAnimationFrame(function() {
           requestAnimationFrame(function() {
             if (!finishToggleInput.checked && !hintBox.classList.contains('is-dismissed')) {
@@ -619,9 +623,11 @@
   if (mapOpenBtn && mapWrapper && mapCloseBtn) {
     var isMobileDevice = document.body.classList.contains('mobile');
     var shouldOpenMap = ENABLE_MINIMAP && (isMobileDevice ? MINIMAP_OPEN_MOBILE : MINIMAP_OPEN_DESKTOP);
-    if (shouldOpenMap) {
-      mapOpenBtn.classList.add('hidden-state');
-      mapWrapper.classList.add('active-state');
+    if (shouldOpenMap || !ENABLE_MINIMAP_HINT) {
+      if (shouldOpenMap) {
+        mapOpenBtn.classList.add('hidden-state');
+        mapWrapper.classList.add('active-state');
+      }
       if (mapHintBox) mapHintBox.style.display = 'none';
     } else if (ENABLE_MINIMAP && mapHintBox) {
       requestAnimationFrame(function() {
