@@ -831,7 +831,15 @@
       this._hasSmooth = false;
       this._enabled = true;
 
+      this._onScreenRotate = () => {
+        const curV = this._viewer.view();
+        this._baseYaw = curV ? curV.yaw() : this._baseYaw;
+        this._basePitch = curV ? curV.pitch() : this._basePitch;
+        this._calibrated = false;
+        this._hasSmooth = false;
+      };
       window.addEventListener('deviceorientation', this._onOrientation, true);
+      window.addEventListener('orientationchange', this._onScreenRotate);
       this.emit('change', true);
       return true;
     }
@@ -840,6 +848,7 @@
       if (!this._enabled) return;
       this._enabled = false;
       window.removeEventListener('deviceorientation', this._onOrientation, true);
+      if (this._onScreenRotate) window.removeEventListener('orientationchange', this._onScreenRotate);
       this.emit('change', false);
     }
 
@@ -888,19 +897,17 @@
       const devRightN = sA * cG + cA * sB * sG;
       const devRightU = -cB * sG;
 
-      // Реальный «верх» экрана с учётом портретной/альбомной ориентации
+      // Реальный «верх» и «право» экрана с учётом портретной/альбомной ориентации
       const cS = Math.cos(s), sS = Math.sin(s);
       const scrUpE = devUpE * cS - devRightE * sS;
       const scrUpN = devUpN * cS - devRightN * sS;
+      const scrUpU = devUpU * cS - devRightU * sS;
 
-      // Защита от сингулярности в надире (пол) и зените (потолок):
-      // когда луч камеры уходит вертикально вниз (lookU < 0), его горизонтальную
-      // проекцию заменяет направление верхнего торца экрана (scrUp);
-      // когда вверх (lookU > 0) — направление нижнего торца (-scrUp).
-      const poleSign = lookU > 0 ? -1 : 1;
-      const absU = Math.abs(lookU);
-      const horizE = lookE + poleSign * absU * scrUpE;
-      const horizN = lookN + poleSign * absU * scrUpN;
+      // Плавная проекция без скачка знака на горизонте (poleSign меняем только при |lookU| > 0.7)
+      const blend = Math.max(0, (Math.abs(lookU) - 0.5) * 2);
+      const poleSign = scrUpU >= 0 ? 1 : -1;
+      const horizE = lookE + poleSign * blend * scrUpE;
+      const horizN = lookN + poleSign * blend * scrUpN;
 
       const worldYaw = Math.atan2(horizE, horizN);
       const worldPitch = Math.asin(clamp(-lookU, -1, 1));
@@ -1013,6 +1020,8 @@
       this._scenes = [];
       this._currentScene = null;
       this._prevScene = null;
+      this._compareScene = null;
+      this._splitRatio = 0.5;
       this._fadeAlpha = 1;
       this._fadeStart = 0;
       this._fadeDuration = 450;
@@ -1041,6 +1050,15 @@
     view() { return this._currentScene ? this._currentScene.view() : null; }
     gyroscope() { return this._gyro; }
     setScrollLocked(locked) { this._scrollLocked = Boolean(locked); }
+    setCompareScene(scene, ratio) {
+      this._compareScene = scene || null;
+      if (ratio != null) this._splitRatio = clamp(ratio, 0, 1);
+      this._dirty = true;
+    }
+    setSplitRatio(ratio) {
+      this._splitRatio = clamp(ratio, 0, 1);
+      this._dirty = true;
+    }
 
     updateSize() {
       const w = this._dom.clientWidth || 1;
@@ -1211,17 +1229,38 @@
 
       if (this._dirty && this._gl && this._currentScene) {
         const gl = this._gl;
-        gl.viewport(0, 0, this._canvas.width, this._canvas.height);
+        const cw = this._canvas.width;
+        const ch = this._canvas.height;
+        gl.viewport(0, 0, cw, ch);
         gl.clearColor(0, 0, 0, 1);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         gl.enable(gl.DEPTH_TEST);
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-        if (this._prevScene) {
-          this._cubeRenderer.renderScene(this._prevScene, this._texMgr, 1, 1);
+        if (this._compareScene) {
+          const splitPx = Math.round(cw * this._splitRatio);
+          const curV = this._currentScene.view();
+          const cmpV = this._compareScene.view();
+          cmpV.setSize({ width: this._dom.clientWidth || 1, height: this._dom.clientHeight || 1 });
+          cmpV.setParameters({ yaw: curV.yaw(), pitch: curV.pitch(), roll: curV.roll(), fov: curV.fov() });
+
+          gl.enable(gl.SCISSOR_TEST);
+          if (splitPx > 0) {
+            gl.scissor(0, 0, splitPx, ch);
+            this._cubeRenderer.renderScene(this._currentScene, this._texMgr, 1, 0);
+          }
+          if (splitPx < cw) {
+            gl.scissor(splitPx, 0, cw - splitPx, ch);
+            this._cubeRenderer.renderScene(this._compareScene, this._texMgr, 1, 0);
+          }
+          gl.disable(gl.SCISSOR_TEST);
+        } else {
+          if (this._prevScene) {
+            this._cubeRenderer.renderScene(this._prevScene, this._texMgr, 1, 1);
+          }
+          this._cubeRenderer.renderScene(this._currentScene, this._texMgr, this._fadeAlpha, 0);
         }
-        this._cubeRenderer.renderScene(this._currentScene, this._texMgr, this._fadeAlpha, 0);
         this._currentScene.hotspotContainer()._update();
         this._dirty = false;
       }

@@ -991,6 +991,94 @@ body.multiple-scenes.mobile #titleBar { left: 50px; }
   right: 25px;
 }
 
+/* --- ШТОРКА СРАВНЕНИЯ «ДО / ПОСЛЕ РЕМОНТА» -------------------------------- */
+.compare-slider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  z-index: 25;
+  pointer-events: none;
+}
+
+.compare-slider-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -1px;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.65);
+}
+
+.compare-slider-handle {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: rgba(20, 25, 35, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.55);
+  cursor: ew-resize;
+  pointer-events: auto;
+  touch-action: none;
+  transition: transform 0.15s ease, background-color 0.2s ease;
+}
+
+.compare-slider-handle:hover,
+.compare-slider.is-dragging .compare-slider-handle {
+  background: rgba(0, 123, 255, 0.9);
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+.compare-slider-handle svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.compare-slider-hint {
+  position: absolute;
+  top: calc(50% + 34px);
+  left: 0;
+  transform: translateX(-50%);
+  background: rgba(20, 25, 35, 0.86);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: center;
+  width: max-content;
+  max-width: 76vw;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, 6px);
+  transition: opacity 1.6s cubic-bezier(0.22, 1, 0.36, 1), transform 1.6s cubic-bezier(0.22, 1, 0.36, 1), visibility 1.6s;
+}
+
+.compare-slider-hint.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
 /* Вспомогательный класс скрытия блоков интерфейса */
 .is-hidden {
   display: none !important;
