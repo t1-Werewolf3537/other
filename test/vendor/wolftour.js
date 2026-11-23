@@ -872,36 +872,43 @@
       }
     }
 
-    _buildRotationMatrix(alphaDeg, betaDeg, gammaDeg, screenAngleDeg) {
+    _getWorldAngles(alphaDeg, betaDeg, gammaDeg, screenAngleDeg) {
       const a = alphaDeg * DEG2RAD;
       const b = betaDeg * DEG2RAD;
       const g = gammaDeg * DEG2RAD;
-      const s = -screenAngleDeg * DEG2RAD;
+      const s = screenAngleDeg * DEG2RAD;
 
       const cA = Math.cos(a), sA = Math.sin(a);
       const cB = Math.cos(b), sB = Math.sin(b);
       const cG = Math.cos(g), sG = Math.sin(g);
 
-      // Матрица Z(alpha) * X(beta) * Y(gamma)
-      const r00 = cA * cG - sA * sB * sG;
-      const r01 = -sA * cB;
-      const r02 = cA * sG + sA * sB * cG;
+      // Вектор взгляда задней камеры (0, 0, -1) в мировых координатах (East, North, Up)
+      const lookE = -cA * sG - sA * sB * cG;
+      const lookN = -sA * sG + cA * sB * cG;
+      const lookU = -cB * cG;
 
-      const r10 = sA * cG + cA * sB * sG;
-      const r11 = cA * cB;
-      const r12 = sA * sG - cA * sB * cG;
+      // Вектор верхнего торца телефона (0, 1, 0) и правого края (1, 0, 0)
+      const devUpE = -sA * cB;
+      const devUpN = cA * cB;
 
-      const r20 = -cB * sG;
-      const r21 = sB;
-      const r22 = cB * cG;
+      const devRightE = cA * cG - sA * sB * sG;
+      const devRightN = sA * cG + cA * sB * sG;
 
-      // Умножаем справа на поворот экрана Z(-screenAngle)
+      // Реальный «верх» экрана с учётом портретной/альбомной ориентации
       const cS = Math.cos(s), sS = Math.sin(s);
-      return [
-        r00 * cS + r01 * sS, -r00 * sS + r01 * cS, r02,
-        r10 * cS + r11 * sS, -r10 * sS + r11 * cS, r12,
-        r20 * cS + r21 * sS, -r20 * sS + r21 * cS, r22
-      ];
+      const scrUpE = devUpE * cS - devRightE * sS;
+      const scrUpN = devUpN * cS - devRightN * sS;
+
+      // В вертикали и альбоме в надире (lookU < 0) верх экрана смотрит вперёд (+scrUp),
+      // а в зените (lookU > 0) — назад (-scrUp), но применяем это только при наклоне > 45°
+      const poleSign = lookU > 0 ? -1 : 1;
+      const absU = Math.abs(lookU);
+      const horizE = lookE + poleSign * absU * scrUpE;
+      const horizN = lookN + poleSign * absU * scrUpN;
+
+      const worldYaw = Math.atan2(horizE, horizN);
+      const worldPitch = Math.asin(clamp(-lookU, -1, 1));
+      return { yaw: worldYaw, pitch: worldPitch };
     }
 
     _onOrientation(e) {
@@ -916,28 +923,20 @@
         screenAngle = window.orientation;
       }
 
-      const m = this._buildRotationMatrix(e.alpha, e.beta, e.gamma, screenAngle);
-      // Вектор взгляда задней камеры в мировых координатах: m * [0, 0, -1]
-      const lx = -m[2], ly = -m[5], lz = -m[8];
+      const cur = this._getWorldAngles(e.alpha, e.beta, e.gamma, screenAngle);
 
       if (!this._calibrated) {
-        // Сохраняем начальный базис экрана (право, верх, взгляд) в точке старта
-        this._refRight = [m[0], m[3], m[6]];
-        this._refUp = [m[1], m[4], m[7]];
-        this._refForward = [lx, ly, lz];
-        // Угол наклона телефона на старте (чтобы компенсировать наклон руки)
-        this._refPitch = Math.asin(clamp(-lz, -1, 1));
+        this._refYaw = cur.yaw;
+        this._refPitch = cur.pitch;
         this._calibrated = true;
         return;
       }
 
-      // Проекция текущего взгляда (lx, ly, lz) на стартовую горизонтальную плоскость
-      const dotF = lx * this._refForward[0] + ly * this._refForward[1] + lz * this._refForward[2];
-      const dotR = lx * this._refRight[0] + ly * this._refRight[1] + lz * this._refRight[2];
-      const relYaw = Math.atan2(dotR, dotF);
+      let relYaw = cur.yaw - this._refYaw;
+      while (relYaw > Math.PI) relYaw -= 2 * Math.PI;
+      while (relYaw < -Math.PI) relYaw += 2 * Math.PI;
 
-      const curPitch = Math.asin(clamp(-lz, -1, 1));
-      const relPitch = curPitch - this._refPitch;
+      const relPitch = cur.pitch - this._refPitch;
 
       this._targetYaw = this._baseYaw + relYaw;
       this._targetPitch = clamp(this._basePitch + relPitch, -Math.PI * 0.48, Math.PI * 0.48);

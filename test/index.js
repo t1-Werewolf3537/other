@@ -487,12 +487,9 @@
       var draggingSlider = false;
       var updateSliderByClientX = function(clientX) {
         var rect = panoElement.getBoundingClientRect();
-        var edgePad = 22;
-        var usableW = Math.max(1, rect.width - edgePad * 2);
-        var ratio = (clientX - rect.left - edgePad) / usableW;
+        var ratio = (clientX - rect.left) / Math.max(1, rect.width);
         currentSplitRatio = Math.max(0, Math.min(1, ratio));
-        var visualPx = edgePad + currentSplitRatio * usableW;
-        compareSliderEl.style.left = visualPx.toFixed(1) + 'px';
+        compareSliderEl.style.left = (currentSplitRatio * 100).toFixed(2) + '%';
         if (viewer.setSplitRatio) viewer.setSplitRatio(currentSplitRatio);
 
         if (mapImageEl) {
