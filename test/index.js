@@ -127,8 +127,11 @@
     });
   }
   document.addEventListener('touchstart', function(e) {
+    if (e.target && e.target.closest('a, button, label, input, #sceneListToggle, .custom-zhk-top-round, #mini-map-close-btn')) {
+      return;
+    }
     if (e.touches && e.touches.length === 1) {
-      var x = e.touches[0].clientX;
+      var x = e.touches.clientX;
       if (x < 30 || x > window.innerWidth - 30) {
         if (e.cancelable) e.preventDefault();
       }
