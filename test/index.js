@@ -38,6 +38,8 @@
   var ENABLE_REPAIR_SWITCH = true; // true = сравнение отделки включено, false = полностью скрыто
   var REPAIR_COMPARE_MODE = "slider"; // "slider" = шторка До/После на экране, "switch" = iOS-тумблер
   var ENABLE_MINIMAP = true;        // true = планировка включена, false = полностью скрыта
+  var MINIMAP_OPEN_DESKTOP = true; // true = планировка сразу открыта на ПК, false = свёрнута
+  var MINIMAP_OPEN_MOBILE = false;  // true = планировка сразу открыта на мобильных, false = свёрнута
   var ENABLE_FULLSCREEN = false;    // true = кнопка полноэкранного режима включена, false = скрыта
   var ENABLE_GYROSCOPE = true;     // true = кнопка гироскопа включена на мобильных, false = скрыта
   var ENABLE_DEMO_WATERMARK = false; // true = тестовая сетка поверх панорамы (для демо заказчику)
@@ -611,6 +613,13 @@
   var mapCloseBtn = document.getElementById('mini-map-close-btn');
 
   if (mapOpenBtn && mapWrapper && mapCloseBtn) {
+    var isMobileDevice = document.body.classList.contains('mobile');
+    var shouldOpenMap = ENABLE_MINIMAP && (isMobileDevice ? MINIMAP_OPEN_MOBILE : MINIMAP_OPEN_DESKTOP);
+    if (shouldOpenMap) {
+      mapOpenBtn.classList.add('hidden-state');
+      mapWrapper.classList.add('active-state');
+    }
+
     mapOpenBtn.addEventListener('click', function(event) {
       event.stopPropagation();
       mapOpenBtn.classList.add('hidden-state');
