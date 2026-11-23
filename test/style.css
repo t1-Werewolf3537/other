@@ -781,6 +781,52 @@ body.multiple-scenes.mobile #titleBar { left: 50px; }
   margin-top: 2px;
 }
 
+/* Бегущая световая полоса под текстом подсказок (бесшовный цикл) */
+@keyframes hintTextSweep {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: 0% 0;
+  }
+}
+
+.ios-switch-label-box > span:not(.hint-arrow-wrap),
+.map-open-hint-box > span:not(.hint-arrow-wrap) {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 4px;
+}
+
+.ios-switch-label-box > span:not(.hint-arrow-wrap)::after,
+.map-open-hint-box > span:not(.hint-arrow-wrap)::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(255, 255, 255, 0.92) 12%,
+    rgba(51, 149, 255, 1) 25%,
+    rgba(255, 255, 255, 0.92) 38%,
+    rgba(255, 255, 255, 0.92) 62%,
+    rgba(51, 149, 255, 1) 75%,
+    rgba(255, 255, 255, 0.92) 88%,
+    rgba(255, 255, 255, 0.92) 100%
+  );
+  background-size: 200% 100%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  animation: hintTextSweep 3.2s linear infinite;
+}
+
+.map-open-hint-box > span:not(.hint-arrow-wrap)::after {
+  height: 1.5px;
+}
+
 .hint-arrow-icon {
   position: relative;
   z-index: 1;
