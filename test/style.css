@@ -486,7 +486,7 @@ body.multiple-scenes.mobile #titleBar { left: 50px; }
 }
 
 .no-touch .map-nav-point:hover {
-  background-color: var(--map-dot-color);
+  background-color: #34c759;
   scale: 1.25;
   opacity: 1;
 }
