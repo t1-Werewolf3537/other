@@ -4,8 +4,8 @@ var APP_DATA = {
       "id": "1",
       "name": "Bath",
       "mapCoords": {
-        "left": "50%",
-        "top": "50%"
+        "left": "78.33%",
+        "top": "77.57%"
       },
       "levels": [
         {
@@ -42,8 +42,8 @@ var APP_DATA = {
       "id": "2",
       "name": "BedRoom",
       "mapCoords": {
-        "left": "50%",
-        "top": "50%"
+        "left": "58.20%",
+        "top": "28.61%"
       },
       "levels": [
         {
@@ -80,8 +80,8 @@ var APP_DATA = {
       "id": "3",
       "name": "HallWay",
       "mapCoords": {
-        "left": "50%",
-        "top": "50%"
+        "left": "55.70%",
+        "top": "80.82%"
       },
       "levels": [
         {
@@ -130,8 +130,8 @@ var APP_DATA = {
       "id": "4",
       "name": "Kitchen",
       "mapCoords": {
-        "left": "50%",
-        "top": "50%"
+        "left": "28.70%",
+        "top": "66.96%"
       },
       "levels": [
         {
@@ -174,8 +174,8 @@ var APP_DATA = {
       "id": "5",
       "name": "Living",
       "mapCoords": {
-        "left": "50%",
-        "top": "50%"
+        "left": "25.58%",
+        "top": "40.45%"
       },
       "levels": [
         {
@@ -218,8 +218,8 @@ var APP_DATA = {
       "id": "6",
       "name": "Loggia",
       "mapCoords": {
-        "left": "50%",
-        "top": "50%"
+        "left": "26.08%",
+        "top": "10.56%"
       },
       "levels": [
         {
@@ -256,8 +256,8 @@ var APP_DATA = {
       "id": "7",
       "name": "Bath_REPAIR",
       "mapCoords": {
-        "left": "50%",
-        "top": "50%"
+        "left": "78.33%",
+        "top": "77.57%"
       },
       "levels": [
         {
@@ -298,8 +298,8 @@ var APP_DATA = {
       "id": "8",
       "name": "BedRoom_REPAIR",
       "mapCoords": {
-        "left": "50%",
-        "top": "50%"
+        "left": "58.20%",
+        "top": "28.61%"
       },
       "levels": [
         {
@@ -340,8 +340,8 @@ var APP_DATA = {
       "id": "9",
       "name": "HallWay_REPAIR",
       "mapCoords": {
-        "left": "50%",
-        "top": "50%"
+        "left": "55.70%",
+        "top": "80.82%"
       },
       "levels": [
         {
@@ -394,8 +394,8 @@ var APP_DATA = {
       "id": "10",
       "name": "Kitchen_REPAIR",
       "mapCoords": {
-        "left": "50%",
-        "top": "50%"
+        "left": "28.70%",
+        "top": "66.96%"
       },
       "levels": [
         {
@@ -442,8 +442,8 @@ var APP_DATA = {
       "id": "11",
       "name": "Living_REPAIR",
       "mapCoords": {
-        "left": "50%",
-        "top": "50%"
+        "left": "25.58%",
+        "top": "40.45%"
       },
       "levels": [
         {
@@ -490,8 +490,8 @@ var APP_DATA = {
       "id": "12",
       "name": "Loggia_REPAIR",
       "mapCoords": {
-        "left": "50%",
-        "top": "50%"
+        "left": "26.08%",
+        "top": "10.56%"
       },
       "levels": [
         {
