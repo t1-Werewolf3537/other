@@ -456,12 +456,16 @@ body.multiple-scenes.mobile #titleBar { left: 50px; }
   pointer-events: none;
 }
 
-@keyframes mapPointPulse {
+@keyframes mapPointBeacon {
   0%, 100% {
-    transform: translate(-50%, -50%) scale(1);
+    transform: translate(-50%, -50%) scale(0.88);
+    filter: brightness(0.95);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45), 0 0 0 0 rgba(255, 255, 255, 0.55);
   }
-  50% {
-    transform: translate(-50%, -50%) scale(0.65);
+  45% {
+    transform: translate(-50%, -50%) scale(1.22);
+    filter: brightness(1.25);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5), 0 0 0 0.75cqw rgba(255, 255, 255, 0);
   }
 }
 
@@ -473,17 +477,21 @@ body.multiple-scenes.mobile #titleBar { left: 50px; }
   opacity: var(--map-point-opacity);
   border: 0.3cqw solid var(--map-point-border);
   border-radius: 50%;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
   cursor: pointer;
   pointer-events: auto;
   transform: translate(-50%, -50%);
-  animation: mapPointPulse 1.1s ease-in-out infinite;
-  transition: transform 0.2s ease-in-out, opacity 0.2s;
+  animation: mapPointBeacon 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  transition: transform 0.2s ease-in-out, opacity 0.2s, filter 0.2s;
 }
+
+.map-nav-point:nth-child(2n) { animation-delay: 0.25s; }
+.map-nav-point:nth-child(3n) { animation-delay: 0.5s; }
+.map-nav-point:nth-child(4n) { animation-delay: 0.75s; }
 
 .no-touch .map-nav-point:hover {
   animation: none;
-  transform: translate(-50%, -50%) scale(1.3);
+  filter: brightness(1.2);
+  transform: translate(-50%, -50%) scale(1.35);
   opacity: 1;
 }
 
