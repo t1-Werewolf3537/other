@@ -606,7 +606,7 @@ body.multiple-scenes.mobile #titleBar { left: 50px; }
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 5px;
+  gap: 10px;
   position: absolute;
   top: 48px;
   left: 6px;
@@ -671,6 +671,29 @@ body.multiple-scenes.mobile #titleBar { left: 50px; }
   transform: translate(18px, -50%);
 }
 
+@keyframes hintPulseUp {
+  0%, 100% {
+    transform: translateY(0);
+    color: #ffffff;
+  }
+  50% {
+    transform: translateY(-4px);
+    color: #3395ff;
+  }
+}
+
+@keyframes hintPulseDown {
+  0%, 100% {
+    transform: translateY(0);
+    color: #ffffff;
+  }
+  50% {
+    transform: translateY(4px);
+    color: #3395ff;
+  }
+}
+
+
 .ios-switch-label-box {
   display: flex;
   flex-direction: column;
@@ -694,26 +717,85 @@ body.multiple-scenes.mobile #titleBar { left: 50px; }
   scale: var(--switch-text-scale-pc);
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.8s ease-in-out, visibility 0.8s ease-in-out;
+  transform: translateY(-8px);
+  transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1), transform 0.65s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.65s;
 }
 
 .ios-switch-label-box.is-visible {
   opacity: 1;
   visibility: visible;
+  transform: translateY(0);
 }
 
 .ios-switch-label-box.is-dismissed {
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+  transform: translateY(-4px);
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out, visibility 0.3s;
 }
 
 .hint-arrow-icon {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
   color: #ffffff;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.85));
+  filter: drop-shadow(0 0 1px #000000) drop-shadow(0 0 1px #000000);
+  animation: hintPulseUp 1.4s ease-in-out infinite;
+}
+
+.hint-arrow-icon.hint-arrow-down {
+  animation: hintPulseDown 1.4s ease-in-out infinite;
+}
+
+/* Подсказка над кнопкой «Планировка» (зеркальный аналог подсказки тумблера) */
+.map-open-hint-box {
+  position: absolute;
+  bottom: 70px;
+  left: 33px;
+  z-index: 110;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  color: #ffffff;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+  pointer-events: none;
+  cursor: default;
+  transform-origin: 8px bottom;
+  scale: calc(var(--dynamic-image-scale-pc) * var(--switch-text-scale-pc));
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1), transform 0.65s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.65s;
+}
+
+.map-open-hint-box.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.map-open-hint-box.is-dismissed {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out, visibility 0.3s;
+}
+
+.mobile .map-open-hint-box {
+  left: 30px;
+  bottom: 68px;
+  font-size: 12px;
+  scale: calc(1.4 * var(--switch-text-scale-mobile));
 }
 
 /* --- АДАПТИВНОСТЬ ДЛЯ СМАРТФОНОВ (.mobile) --------------------------------- */
@@ -754,7 +836,7 @@ body.multiple-scenes.mobile #titleBar { left: 50px; }
   scale: 1.4;
   top: 65px;
   left: 6px;
-  gap: 5px;
+  gap: 9px;
   padding: 0;
 }
 

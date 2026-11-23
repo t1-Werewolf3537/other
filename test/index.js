@@ -36,9 +36,9 @@
   // ГЛАВНЫЕ НАСТРОЙКИ ПРОЕКТА
   // =========================================================================
   var ENABLE_REPAIR_SWITCH = true; // true = сравнение отделки включено, false = полностью скрыто
-  var REPAIR_COMPARE_MODE = "slider"; // "slider" = шторка До/После на экране, "switch" = iOS-тумблер
+  var REPAIR_COMPARE_MODE = "switch"; // "slider" = шторка До/После на экране, "switch" = iOS-тумблер
   var ENABLE_MINIMAP = true;        // true = планировка включена, false = полностью скрыта
-  var MINIMAP_OPEN_DESKTOP = true; // true = планировка сразу открыта на ПК, false = свёрнута
+  var MINIMAP_OPEN_DESKTOP = false; // true = планировка сразу открыта на ПК, false = свёрнута
   var MINIMAP_OPEN_MOBILE = false;  // true = планировка сразу открыта на мобильных, false = свёрнута
   var ENABLE_FULLSCREEN = false;    // true = кнопка полноэкранного режима включена, false = скрыта
   var ENABLE_GYROSCOPE = true;     // true = кнопка гироскопа включена на мобильных, false = скрыта
@@ -51,7 +51,7 @@
   var TILES_URL = "tiles";          // Путь к тайлам: "tiles" или ссылка на Яндекс Облако (без слеша на конце)
   var CAMERA_DRAG_SPEED = 0.65;     // Скорость вращения камеры (0.3 - плавно, 1.0 - стандарт)
   var CAMERA_INERTIA = 4.5;         // Затухание инерции (2.0 - длинный докат, 8.0 - быстрая остановка)
-  var RADAR_ANGLE_OFFSET = 180;     // Базовый угол поворота луча радара (0 - 360 градусов)
+  var RADAR_ANGLE_OFFSET = 270;     // Базовый угол поворота луча радара (0 - 360 градусов)
   // =========================================================================
 
   var isWhiteStyle = Boolean(START_WITH_REPAIR);
@@ -468,10 +468,12 @@
 
   if (!ENABLE_REPAIR_SWITCH) {
     if (switchWrapper) switchWrapper.style.display = 'none';
+    if (hintBox) hintBox.style.display = 'none';
     if (compareSliderEl) compareSliderEl.classList.add('is-hidden');
     if (mapImageEl) mapImageEl.src = 'img/plan.jpg';
   } else if (isSliderModeActive) {
     if (switchWrapper) switchWrapper.style.display = 'none';
+    if (hintBox) hintBox.style.display = 'none';
     if (mapImageEl) mapImageEl.src = 'img/plan_REPAIR.jpg';
     if (compareSliderEl && compareHandleEl) {
       compareSliderEl.classList.remove('is-hidden');
@@ -547,14 +549,14 @@
     syncInterfaceStyle();
 
     if (finishToggleInput) {
-      var showTimer = null;
-
-      if (hintBox) {
-        showTimer = setTimeout(function() {
-          if (!finishToggleInput.checked && !hintBox.classList.contains('is-dismissed')) {
-            hintBox.classList.add('is-visible');
-          }
-        }, 6000);
+      if (hintBox && !finishToggleInput.checked) {
+        requestAnimationFrame(function() {
+          requestAnimationFrame(function() {
+            if (!finishToggleInput.checked && !hintBox.classList.contains('is-dismissed')) {
+              hintBox.classList.add('is-visible');
+            }
+          });
+        });
       }
 
       finishToggleInput.addEventListener('change', function(event) {
@@ -562,8 +564,7 @@
 
         isWhiteStyle = this.checked;
 
-        if (isWhiteStyle && hintBox) {
-          clearTimeout(showTimer);
+        if (hintBox && !hintBox.classList.contains('is-dismissed')) {
           hintBox.classList.remove('is-visible');
           hintBox.classList.add('is-dismissed');
         }
@@ -600,11 +601,14 @@
     syncRadarAngle(startScene.view);
   }
 
+  var mapHintBox = document.getElementById('mini-map-hint');
+
   if (!ENABLE_MINIMAP) {
     var btnMap = document.getElementById('mini-map-toggle-btn');
     var wrapMap = document.getElementById('mini-map-wrapper');
     if (btnMap) btnMap.style.display = 'none';
     if (wrapMap) wrapMap.style.display = 'none';
+    if (mapHintBox) mapHintBox.style.display = 'none';
   }
 
   // Сворачивание и разворачивание мини-карты
@@ -618,12 +622,25 @@
     if (shouldOpenMap) {
       mapOpenBtn.classList.add('hidden-state');
       mapWrapper.classList.add('active-state');
+      if (mapHintBox) mapHintBox.style.display = 'none';
+    } else if (ENABLE_MINIMAP && mapHintBox) {
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+          if (!mapHintBox.classList.contains('is-dismissed')) {
+            mapHintBox.classList.add('is-visible');
+          }
+        });
+      });
     }
 
     mapOpenBtn.addEventListener('click', function(event) {
       event.stopPropagation();
       mapOpenBtn.classList.add('hidden-state');
       mapWrapper.classList.add('active-state');
+      if (mapHintBox && !mapHintBox.classList.contains('is-dismissed')) {
+        mapHintBox.classList.remove('is-visible');
+        mapHintBox.classList.add('is-dismissed');
+      }
     });
 
     mapCloseBtn.addEventListener('click', function(event) {
