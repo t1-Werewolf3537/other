@@ -471,6 +471,27 @@
   }
   hideSceneList();
 
+  // Стартовая подсказка управления туром
+  var startControlsHint = document.getElementById('start-controls-hint');
+  var startControlsOkBtn = document.getElementById('start-controls-ok-btn');
+  if (startControlsHint) {
+    if (isSliderModeActive) {
+      startControlsHint.classList.add('is-below-slider');
+    }
+    var dismissStartHint = function(e) {
+      if (e) e.stopPropagation();
+      startControlsHint.classList.remove('is-visible');
+    };
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        startControlsHint.classList.add('is-visible');
+      });
+    });
+    if (startControlsOkBtn) {
+      startControlsOkBtn.addEventListener('click', dismissStartHint, { once: true });
+    }
+  }
+
   // Логика сравнения отделки: Шторка (slider) или iOS-тумблер (switch)
   var switchWrapper = document.querySelector('.ios-switch-wrapper');
   var finishToggleInput = document.getElementById('finish-variant-toggle-btn');
