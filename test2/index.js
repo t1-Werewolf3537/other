@@ -131,19 +131,23 @@
     });
   }
   var INTERACTIVE_SELECTOR = 'a, button, label, input, select, textarea, #sceneList, #sceneListToggle, .custom-zhk-top-round, .custom-wolf-watermark-bottom, .map-nav-point, #mini-map-close-btn, #mini-map-toggle-btn, .ios-switch, .hotspot, .compare-slider-handle, #editorPanel';
+  var historyGuardArmed = false;
+
+  var armHistoryGuard = function() {
+    if (historyGuardArmed || isInIframe || !window.history || !window.history.pushState) return;
+    historyGuardArmed = true;
+    try {
+      window.history.pushState({ wolftourGuard: true }, '', window.location.href);
+      window.addEventListener('popstate', function() {
+        window.history.pushState({ wolftourGuard: true }, '', window.location.href);
+      });
+    } catch (e) {}
+  };
 
   window.addEventListener('touchstart', function(e) {
-    if (e.target && e.target.closest(INTERACTIVE_SELECTOR)) {
-      return;
-    }
-    if (e.touches && e.touches.length === 1) {
-      var x = e.touches[0].clientX;
-      var w = document.documentElement.clientWidth || window.innerWidth;
-      if (x <= 64 || x >= w - 64) {
-        if (e.cancelable) e.preventDefault();
-      }
-    }
-  }, { passive: false, capture: true });
+    armHistoryGuard();
+    // Не вызываем preventDefault() в touchstart — в Chrome на iOS это передаёт свайп браузеру
+  }, { passive: true, capture: true });
 
   window.addEventListener('touchmove', function(e) {
     if (e.target && e.target.closest('#sceneList')) {
@@ -151,16 +155,6 @@
     }
     if (e.cancelable) e.preventDefault();
   }, { passive: false, capture: true });
-
-  // Защита от системного свайпа «Назад» на Android (Chrome / Яндекс.Браузер) по аналогии с Kuula
-  if (!isInIframe && window.history && window.history.pushState) {
-    try {
-      window.history.pushState({ wolftourGuard: true }, '', window.location.href);
-      window.addEventListener('popstate', function() {
-        window.history.pushState({ wolftourGuard: true }, '', window.location.href);
-      });
-    } catch (e) {}
-  }
 
 
   // Создание сцен (preview.jpg грузится сразу только для стартовой сцены, остальные — в фоне)
