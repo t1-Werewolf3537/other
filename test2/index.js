@@ -304,6 +304,7 @@
         mapDot.classList.remove('switching');
       }, 300);
     }
+  }
 
   // Генерация синих точек комнат на мини-карте (исключая дубли _REPAIR)
   var pointsContainer = document.getElementById('mini-map-points');
