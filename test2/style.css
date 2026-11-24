@@ -150,7 +150,7 @@ h1, ul, li {
   font-size: 13.5px;
   line-height: 1.35;
   width: max-content;
-  max-width: 88vw;
+  max-width: min(460px, 88vw);
   pointer-events: none;
   opacity: 0;
   visibility: hidden;
@@ -162,10 +162,6 @@ h1, ul, li {
   opacity: 1;
   visibility: visible;
   transform: translate(-50%, -50%) scale(1);
-}
-
-#start-controls-hint.is-below-slider {
-  top: calc(50% + 125px);
 }
 
 .sch-item {
@@ -224,13 +220,13 @@ h1, ul, li {
 
 .no-touch .sch-ok-btn:hover {
   background: #0062cc;
-  transform: scale(1.04);
 }
 
 .sch-ok-btn svg {
   width: 16px;
   height: 16px;
   display: block;
+  flex-shrink: 0;
 }
 
 /* --- ВЕРХНЯЯ ПАНЕЛЬ С НАЗВАНИЕМ СЦЕНЫ ------------------------------------- */
@@ -1371,38 +1367,6 @@ body.multiple-scenes.mobile #titleBar { left: 50px; }
   width: 20px;
   height: 20px;
   display: block;
-}
-
-.compare-slider-hint {
-  position: absolute;
-  top: calc(50% + 34px);
-  left: 0;
-  transform: translateX(-50%);
-  background: rgba(20, 25, 35, 0.86);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 8px;
-  padding: 9px 14px;
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1.35;
-  text-align: center;
-  width: max-content;
-  max-width: 76vw;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transform: translate(-50%, 6px);
-  transition: opacity 1.6s cubic-bezier(0.22, 1, 0.36, 1), transform 1.6s cubic-bezier(0.22, 1, 0.36, 1), visibility 1.6s;
-}
-
-.compare-slider-hint.is-visible {
-  opacity: 1;
-  visibility: visible;
-  transform: translate(-50%, 0);
 }
 
 /* Вспомогательный класс скрытия блоков интерфейса */

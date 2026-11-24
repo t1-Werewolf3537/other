@@ -36,7 +36,7 @@
   // ГЛАВНЫЕ НАСТРОЙКИ ПРОЕКТА
   // =========================================================================
   var ENABLE_REPAIR_SWITCH = true; // true = сравнение отделки включено, false = полностью скрыто
-  var REPAIR_COMPARE_MODE = "switch"; // "slider" = шторка До/После на экране, "switch" = iOS-тумблер
+  var REPAIR_COMPARE_MODE = "slider"; // "slider" = шторка До/После на экране, "switch" = iOS-тумблер
   var ENABLE_SWITCH_HINT = true;   // true = показывать подсказку под iOS-тумблером, false = скрыть
   var ENABLE_MINIMAP = true;        // true = планировка включена, false = полностью скрыта
   var ENABLE_MINIMAP_HINT = true;  // true = показывать подсказку над кнопкой «Планировка», false = скрыть
@@ -45,6 +45,7 @@
   var ENABLE_FULLSCREEN = false;    // true = кнопка полноэкранного режима включена, false = скрыта
   var ENABLE_GYROSCOPE = true;     // true = кнопка гироскопа включена на мобильных, false = скрыта
   var ENABLE_DEMO_WATERMARK = false; // true = тестовая сетка поверх панорамы (для демо заказчику)
+  var ENABLE_START_HINT = true;     // true = показывать стартовую подсказку управления, false = скрыть
   var SMART_SCROLL = true;          // true = умный скролл в iframe (зум после клика или с Ctrl)
   var START_WITH_REPAIR = false;    // true = старт с ремонтом (_REPAIR), false = без ремонта
   var START_SCENE_INDEX = 2;        // Индекс стартовой сцены (нумерация с 0)
@@ -53,7 +54,7 @@
   var TILES_URL = "tiles";          // Путь к тайлам: "tiles" или ссылка на Яндекс Облако (без слеша на конце)
   var CAMERA_DRAG_SPEED = 0.65;     // Скорость вращения камеры (0.3 - плавно, 1.0 - стандарт)
   var CAMERA_INERTIA = 4.5;         // Затухание инерции (2.0 - длинный докат, 8.0 - быстрая остановка)
-  var RADAR_ANGLE_OFFSET = 270;     // Базовый угол поворота луча радара (0 - 360 градусов)
+  var RADAR_ANGLE_OFFSET = 180;     // Базовый угол поворота луча радара (0 - 360 градусов)
   // =========================================================================
 
   var isWhiteStyle = Boolean(START_WITH_REPAIR);
@@ -130,7 +131,6 @@
       viewer.setScrollLocked(true);
     });
   }
-  var INTERACTIVE_SELECTOR = 'a, button, label, input, select, textarea, #sceneList, #sceneListToggle, .custom-zhk-top-round, .custom-wolf-watermark-bottom, .map-nav-point, #mini-map-close-btn, #mini-map-toggle-btn, .ios-switch, .hotspot, .compare-slider-handle, #editorPanel';
   var historyGuardArmed = false;
 
   var armHistoryGuard = function() {
@@ -474,10 +474,7 @@
   // Стартовая подсказка управления туром
   var startControlsHint = document.getElementById('start-controls-hint');
   var startControlsOkBtn = document.getElementById('start-controls-ok-btn');
-  if (startControlsHint) {
-    if (isSliderModeActive) {
-      startControlsHint.classList.add('is-below-slider');
-    }
+  if (startControlsHint && ENABLE_START_HINT) {
     var dismissStartHint = function(e) {
       if (e) e.stopPropagation();
       startControlsHint.classList.remove('is-visible');
@@ -499,7 +496,6 @@
   var hintBox = document.getElementById('finish-variant-hint');
   var compareSliderEl = document.getElementById('repair-compare-slider');
   var compareHandleEl = document.getElementById('repair-compare-handle');
-  var compareHintEl = document.getElementById('repair-compare-hint');
 
   if (!ENABLE_REPAIR_SWITCH) {
     if (switchWrapper) switchWrapper.style.display = 'none';
@@ -515,21 +511,11 @@
       compareSliderEl.classList.add('is-pulsing');
       compareSliderEl.style.left = (currentSplitRatio * 100) + '%';
 
-      var hideCompareHint = function() {
-        if (compareHintEl) compareHintEl.classList.remove('is-visible');
-      };
-      if (compareHintEl) {
-        requestAnimationFrame(function() {
-          compareHintEl.classList.add('is-visible');
-        });
-        setTimeout(hideCompareHint, 3200);
-      }
-
       var lastPlanSrc = 'img/plan_REPAIR.jpg';
       var draggingSlider = false;
-      var updateSliderByClientX = function(clientX) {
-        var rect = panoElement.getBoundingClientRect();
-        var ratio = (clientX - rect.left) / Math.max(1, rect.width);
+      var demoAnimId = null;
+
+      var applySplitRatio = function(ratio) {
         currentSplitRatio = Math.max(0, Math.min(1, ratio));
         compareSliderEl.style.left = (currentSplitRatio * 100).toFixed(2) + '%';
         if (viewer.setSplitRatio) viewer.setSplitRatio(currentSplitRatio);
@@ -543,6 +529,41 @@
         }
       };
 
+      var updateSliderByClientX = function(clientX) {
+        var rect = panoElement.getBoundingClientRect();
+        applySplitRatio((clientX - rect.left) / Math.max(1, rect.width));
+      };
+
+      var playSliderDemo = function() {
+        if (draggingSlider) return;
+        var duration = 4500;
+        var amplitude = 0.33; // ±22% от центра (от 28% до 72%)
+        var startTs = null;
+        var step = function(ts) {
+          if (draggingSlider) return;
+          if (!startTs) startTs = ts;
+          var t = Math.min(1, (ts - startTs) / duration);
+          // Полный период синуса: влево -> вправо -> возврат в центр (0.5)
+          var offset = -Math.sin(t * Math.PI * 2) * amplitude * Math.sin(t * Math.PI);
+          applySplitRatio(0.5 + offset);
+          if (t < 1) {
+            demoAnimId = requestAnimationFrame(step);
+          } else {
+            applySplitRatio(0.5);
+            demoAnimId = null;
+          }
+        };
+        demoAnimId = requestAnimationFrame(step);
+      };
+
+      if (startControlsHint && ENABLE_START_HINT && startControlsOkBtn) {
+        startControlsOkBtn.addEventListener('click', function() {
+          setTimeout(playSliderDemo, 200);
+        }, { once: true });
+      } else {
+        setTimeout(playSliderDemo, 500);
+      }
+
       compareHandleEl.addEventListener('touchstart', function(e) {
         if (e.cancelable) e.preventDefault();
       }, { passive: false });
@@ -553,11 +574,14 @@
       compareHandleEl.addEventListener('pointerdown', function(e) {
         e.stopPropagation();
         if (e.cancelable) e.preventDefault();
+        if (demoAnimId) {
+          cancelAnimationFrame(demoAnimId);
+          demoAnimId = null;
+        }
         draggingSlider = true;
         compareSliderEl.classList.remove('is-pulsing');
         compareSliderEl.classList.add('is-dragging');
         compareHandleEl.setPointerCapture(e.pointerId);
-        hideCompareHint();
       });
       compareHandleEl.addEventListener('pointermove', function(e) {
         if (!draggingSlider) return;
