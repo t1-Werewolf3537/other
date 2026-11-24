@@ -181,6 +181,7 @@ body.multiple-scenes.mobile #titleBar { left: 50px; }
   padding: 5px;
   background-color: rgba(0, 123, 255, 0.8);
   z-index: 2001;
+  touch-action: manipulation;
 }
 
 .mobile #sceneListToggle {
@@ -216,6 +217,8 @@ body.multiple-scenes.mobile #titleBar { left: 50px; }
   max-height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
   margin-left: 0;
   z-index: 2000;
   transition: margin-left 0.5s ease-in-out;
@@ -479,10 +482,19 @@ body.multiple-scenes.mobile #titleBar { left: 50px; }
   border-radius: 50%;
   cursor: pointer;
   pointer-events: auto;
+  touch-action: manipulation;
   translate: -50% -50%;
   scale: 1;
   animation: mapPointSyncPulse 1.5s ease-in-out infinite;
   transition: scale 0.2s ease-in-out, opacity 0.2s, background-color 0.2s ease-in-out;
+}
+
+.map-nav-point::after {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  background: transparent;
 }
 
 .no-touch .map-nav-point:hover {
@@ -506,6 +518,7 @@ body.multiple-scenes.mobile #titleBar { left: 50px; }
   padding: 1px;
   z-index: 2001;
   cursor: pointer;
+  touch-action: manipulation;
   border-radius: 4px;
   background-color: rgba(255, 255, 255, 0.8);
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);

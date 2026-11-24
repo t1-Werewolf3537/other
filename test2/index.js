@@ -130,19 +130,25 @@
       viewer.setScrollLocked(true);
     });
   }
+  var INTERACTIVE_SELECTOR = 'a, button, label, input, select, textarea, #sceneList, #sceneListToggle, .custom-zhk-top-round, .custom-wolf-watermark-bottom, .map-nav-point, #mini-map-close-btn, #mini-map-toggle-btn, .ios-switch, .hotspot, .compare-slider-handle, #editorPanel';
+
   document.addEventListener('touchstart', function(e) {
-    if (e.target && e.target.closest('a, button, label, input, #sceneListToggle, .custom-zhk-top-round, #mini-map-close-btn')) {
+    if (e.target && e.target.closest(INTERACTIVE_SELECTOR)) {
       return;
     }
     if (e.touches && e.touches.length === 1) {
       var x = e.touches[0].clientX;
-      if (x < 30 || x > window.innerWidth - 30) {
+      var w = document.documentElement.clientWidth || window.innerWidth;
+      if (x <= 48 || x >= w - 48) {
         if (e.cancelable) e.preventDefault();
       }
     }
   }, { passive: false });
 
-  panoElement.addEventListener('touchmove', function(e) {
+  document.addEventListener('touchmove', function(e) {
+    if (e.target && e.target.closest('#sceneList')) {
+      return;
+    }
     if (e.cancelable) e.preventDefault();
   }, { passive: false });
 
@@ -287,16 +293,17 @@
     // Перенос красной точки на мини-карте
     var mapDot = document.getElementById('mini-map-dot');
     if (mapDot && finalScene.data && finalScene.data.mapCoords) {
+      clearTimeout(mapDot._moveTimer);
+      clearTimeout(mapDot._showTimer);
       mapDot.classList.add('switching');
-      setTimeout(function() {
+      mapDot._moveTimer = setTimeout(function() {
         mapDot.style.left = finalScene.data.mapCoords.left;
         mapDot.style.top = finalScene.data.mapCoords.top;
       }, 150);
-      setTimeout(function() {
+      mapDot._showTimer = setTimeout(function() {
         mapDot.classList.remove('switching');
       }, 300);
     }
-  }
 
   // Генерация синих точек комнат на мини-карте (исключая дубли _REPAIR)
   var pointsContainer = document.getElementById('mini-map-points');
