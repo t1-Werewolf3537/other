@@ -132,7 +132,7 @@
   }
   var INTERACTIVE_SELECTOR = 'a, button, label, input, select, textarea, #sceneList, #sceneListToggle, .custom-zhk-top-round, .custom-wolf-watermark-bottom, .map-nav-point, #mini-map-close-btn, #mini-map-toggle-btn, .ios-switch, .hotspot, .compare-slider-handle, #editorPanel';
 
-  document.addEventListener('touchstart', function(e) {
+  window.addEventListener('touchstart', function(e) {
     if (e.target && e.target.closest(INTERACTIVE_SELECTOR)) {
       return;
     }
@@ -145,23 +145,22 @@
     }
   }, { passive: false, capture: true });
 
-  document.addEventListener('pointerdown', function(e) {
-    if (e.pointerType !== 'touch') return;
-    if (e.target && e.target.closest(INTERACTIVE_SELECTOR)) {
-      return;
-    }
-    var w = document.documentElement.clientWidth || window.innerWidth;
-    if (e.clientX <= 64 || e.clientX >= w - 64) {
-      if (e.cancelable) e.preventDefault();
-    }
-  }, { passive: false, capture: true });
-
-  document.addEventListener('touchmove', function(e) {
+  window.addEventListener('touchmove', function(e) {
     if (e.target && e.target.closest('#sceneList')) {
       return;
     }
     if (e.cancelable) e.preventDefault();
   }, { passive: false, capture: true });
+
+  // Защита от системного свайпа «Назад» на Android (Chrome / Яндекс.Браузер) по аналогии с Kuula
+  if (!isInIframe && window.history && window.history.pushState) {
+    try {
+      window.history.pushState({ wolftourGuard: true }, '', window.location.href);
+      window.addEventListener('popstate', function() {
+        window.history.pushState({ wolftourGuard: true }, '', window.location.href);
+      });
+    } catch (e) {}
+  }
 
 
   // Создание сцен (preview.jpg грузится сразу только для стартовой сцены, остальные — в фоне)
