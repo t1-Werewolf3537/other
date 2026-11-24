@@ -139,18 +139,29 @@
     if (e.touches && e.touches.length === 1) {
       var x = e.touches[0].clientX;
       var w = document.documentElement.clientWidth || window.innerWidth;
-      if (x <= 48 || x >= w - 48) {
+      if (x <= 64 || x >= w - 64) {
         if (e.cancelable) e.preventDefault();
       }
     }
-  }, { passive: false });
+  }, { passive: false, capture: true });
+
+  document.addEventListener('pointerdown', function(e) {
+    if (e.pointerType !== 'touch') return;
+    if (e.target && e.target.closest(INTERACTIVE_SELECTOR)) {
+      return;
+    }
+    var w = document.documentElement.clientWidth || window.innerWidth;
+    if (e.clientX <= 64 || e.clientX >= w - 64) {
+      if (e.cancelable) e.preventDefault();
+    }
+  }, { passive: false, capture: true });
 
   document.addEventListener('touchmove', function(e) {
     if (e.target && e.target.closest('#sceneList')) {
       return;
     }
     if (e.cancelable) e.preventDefault();
-  }, { passive: false });
+  }, { passive: false, capture: true });
 
 
   // Создание сцен (preview.jpg грузится сразу только для стартовой сцены, остальные — в фоне)
