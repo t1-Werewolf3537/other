@@ -201,8 +201,8 @@ html, body {
   #titleBar { height: 50px; right: 50px; }
   #titleBar .sceneName { font-size: 14px; line-height: 40px; }
   .custom-zhk-top-round { width: 50px; height: 50px; }
-  #camera-presets-bar { bottom: 86px; }
-  .custom-wolf-watermark-bottom { width: 54px; height: 54px; bottom: 14px; right: 14px; }
+  #camera-presets-bar { bottom: 16px; }
+  .custom-wolf-watermark-bottom { width: 54px; height: 54px; bottom: 72px; right: 14px; }
   .custom-wolf-watermark-bottom .wolf-watermark-bg { width: 50px; height: 50px; }
   .custom-wolf-watermark-bottom .wolf-watermark-icon { width: 40px; height: 40px; }
 }

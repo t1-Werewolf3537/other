@@ -1,5 +1,5 @@
 var APP_DATA = {
-  title: "ЖК «МАЯКОВСКИЙ» | 3D-ГЕНПЛАН",
+  title: "WolfTour Exterior | Кирилл Бахарев",
   modelUrl: "https://sparkjs.dev/assets/splats/butterfly.spz",
   
   modelRotation: { x: Math.PI, y: 0, z: 0 },
