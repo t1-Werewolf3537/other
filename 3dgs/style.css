@@ -1,0 +1,208 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+  background-color: #0b0d10;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: #ffffff;
+}
+
+#exterior-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  touch-action: none;
+}
+
+/* Лоадер */
+#ext-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(11, 13, 16, 0.92);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  transition: opacity 0.4s ease, visibility 0.4s;
+}
+
+#ext-loader.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.ext-spinner {
+  width: 38px;
+  height: 38px;
+  border: 3px solid rgba(255, 255, 255, 0.15);
+  border-top-color: #007bff;
+  border-radius: 50%;
+  animation: extSpin 0.8s linear infinite;
+}
+
+@keyframes extSpin { to { transform: rotate(360deg); } }
+
+/* Верхняя плашка в стиле WolfTour */
+#titleBar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 40px;
+  height: 40px;
+  text-align: center;
+  z-index: 45;
+}
+
+#titleBar .sceneName {
+  width: 100%;
+  height: 100%;
+  font-size: 20px;
+  line-height: 30px;
+  padding: 5px;
+  background-color: rgba(20, 25, 35, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.custom-zhk-top-round {
+  display: block;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 40px;
+  height: 40px;
+  padding: 1px;
+  z-index: 50;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.85);
+}
+
+.custom-zhk-top-round .zhk-round-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Панель быстрых ракурсов камеры */
+#camera-presets-bar {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 45;
+  display: flex;
+  gap: 8px;
+  background: rgba(20, 25, 35, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  max-width: 92vw;
+  overflow-x: auto;
+}
+
+.preset-cam-btn {
+  background: transparent;
+  color: #e2e8f0;
+  border: 1px solid transparent;
+  padding: 7px 14px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: 0.2s;
+}
+
+.preset-cam-btn:hover { background: rgba(255, 255, 255, 0.1); }
+.preset-cam-btn.active {
+  background: #007bff;
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 123, 255, 0.45);
+}
+
+/* 3D-хотспоты поверх модели */
+.ext-hotspot-3d {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translate(-50%, -100%);
+  z-index: 30;
+  background: rgba(20, 25, 35, 0.86);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  padding: 7px 12px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+  transition: transform 0.15s ease, border-color 0.2s;
+  white-space: nowrap;
+}
+
+.ext-hotspot-3d:hover {
+  border-color: #007bff;
+  transform: translate(-50%, -104%) scale(1.04);
+}
+
+.ext-hs-title { font-size: 12.5px; font-weight: 700; color: #fff; }
+.ext-hs-sub { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+
+/* Водяной знак Wolf Studio */
+.custom-wolf-watermark-bottom {
+  display: block;
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 64px;
+  height: 64px;
+  z-index: 40;
+}
+
+.custom-wolf-watermark-bottom .wolf-watermark-bg {
+  position: absolute;
+  inset: 2px;
+  width: 60px;
+  height: 60px;
+  animation: wolfSpin 4s linear infinite;
+}
+
+.custom-wolf-watermark-bottom .wolf-watermark-icon {
+  position: absolute;
+  inset: 7px;
+  width: 50px;
+  height: 50px;
+}
+
+@keyframes wolfSpin { to { transform: rotate(360deg); } }
+
+@media (max-width: 600px) {
+  #titleBar { height: 50px; right: 50px; }
+  #titleBar .sceneName { font-size: 14px; line-height: 40px; }
+  .custom-zhk-top-round { width: 50px; height: 50px; }
+  #camera-presets-bar { bottom: 86px; }
+  .custom-wolf-watermark-bottom { width: 54px; height: 54px; bottom: 14px; right: 14px; }
+  .custom-wolf-watermark-bottom .wolf-watermark-bg { width: 50px; height: 50px; }
+  .custom-wolf-watermark-bottom .wolf-watermark-icon { width: 40px; height: 40px; }
+}

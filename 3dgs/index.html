@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ЖК «Маяковский» — 3D-генплан | Wolf Studio</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Контейнер 3DGS-сцены -->
+  <div id="exterior-canvas"></div>
+
+  <!-- Экран загрузки -->
+  <div id="ext-loader">
+    <div class="ext-spinner"></div>
+    <div id="ext-loader-text">Загрузка 3D-генплана...</div>
+  </div>
+
+  <!-- Верхняя плашка в стиле WolfTour -->
+  <div id="titleBar">
+    <h1 class="sceneName" id="extTitle">ЖК «МАЯКОВСКИЙ» | 3D-ГЕНПЛАН</h1>
+  </div>
+
+  <!-- Логотип ЖК -->
+  <a href="https://mayakovsky42.ru" target="_blank" rel="noopener noreferrer" class="custom-zhk-top-round">
+    <img src="img/logo_zhk.png" alt="ЖК Маяковский" class="zhk-round-img" onerror="this.style.display='none'">
+  </a>
+
+  <!-- Панель быстрых ракурсов камеры (снизу по центру) -->
+  <div id="camera-presets-bar"></div>
+
+  <!-- Водяной знак Wolf Studio -->
+  <a href="https://wolf-studio.ru" target="_blank" rel="noopener noreferrer" class="custom-wolf-watermark-bottom">
+    <img src="img/circle.png" class="wolf-watermark-bg" alt="" onerror="this.style.display='none'">
+    <img src="img/site.png" class="wolf-watermark-icon" alt="Wolf Studio" onerror="this.style.display='none'">
+  </a>
+
+  <!-- Локальный конфиг сцены -->
+  <script src="data.js"></script>
+
+  <!-- Карта модулей с защитой от обрезки путей -->
+  <script>
+    (function() {
+      var u = 'https://unpkg.com/';
+      var s = 'https://sparkjs.dev';
+      var map = {
+        imports: {
+          "three": u + "three@0.174.0/build/three.module.js",
+          "three/addons/": u + "three@0.174.0/examples/jsm/",
+          "@sparkjsdev/spark": s + "/releases/spark/0.1.8/spark.module.js"
+        }
+      };
+      var el = document.createElement('script');
+      el.type = 'importmap';
+      el.textContent = JSON.stringify(map);
+      document.currentScript.after(el);
+    })();
+  </script>
+
+
+  <script type="module" src="index.js"></script>
+</body>
+</html>
