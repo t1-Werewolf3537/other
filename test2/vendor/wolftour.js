@@ -24,8 +24,10 @@
   }
 
   function pixelRatio() {
-    return (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+    const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) ? window.devicePixelRatio : 1;
+    return Math.min(dpr, 2);
   }
+
 
   function htov(hfov, width, height) {
     return 2 * Math.atan((height * Math.tan(hfov / 2)) / width);
@@ -594,6 +596,15 @@
 
     _uploadTexture(source) {
       const gl = this.gl;
+      if (this.textures.size > 140) {
+        for (const [oldKey, oldTex] of this.textures) {
+          if (!oldKey.includes(':0_')) {
+            gl.deleteTexture(oldTex);
+            this.textures.delete(oldKey);
+            if (this.textures.size <= 110) break;
+          }
+        }
+      }
       const tex = gl.createTexture();
       gl.bindTexture(gl.TEXTURE_2D, tex);
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -1108,8 +1119,12 @@
         return Math.hypot(arr[0].clientX - arr[1].clientX, arr[0].clientY - arr[1].clientY);
       };
 
+      el.addEventListener('touchstart', (e) => {
+        if (e.cancelable) e.preventDefault();
+      }, { passive: false });
+
       el.addEventListener('pointerdown', (e) => {
-        el.setPointerCapture(e.pointerId);
+        try { el.setPointerCapture(e.pointerId); } catch (err) {}
         pointers.set(e.pointerId, e);
         lastCenter = getCenter();
         lastDist = getDist();
